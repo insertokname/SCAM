@@ -3,7 +3,7 @@ use rodio::Source;
 use scamu::devices::nes::Nes;
 use scamu::hardware::apu::Apu;
 use scamu::hardware::cartrige::Cartrige;
-use scamu::hardware::constants::clock_rates;
+use scamu::hardware::constants::clock_rates::{APU_SAMPLE_RATE, MASTER_CLOCK};
 use scamu::hardware::constants::controller::buttons;
 use scamu::hardware::constants::ppu::COLORS;
 use std::num::{NonZeroU16, NonZeroU32};
@@ -16,15 +16,11 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
-pub mod test_logger;
-
 const PALLET_WIDTH: usize = 16 * 8;
 const PALLET_HEIGHT: usize = 16 * 8;
 const NAMETABLE_WIDTH: usize = 32 * 8;
 const INIT_WIDTH: usize = PALLET_WIDTH + NAMETABLE_WIDTH;
 const INIT_HEIGHT: usize = PALLET_HEIGHT * 2;
-const MASTER_CLOCKS_PER_NES_TICK: u64 = 4;
-const NES_TICK_HZ: u64 = clock_rates::MASTER_CLOCK / MASTER_CLOCKS_PER_NES_TICK;
 const NANOS_PER_SECOND: u128 = 1_000_000_000;
 const LAST_VISIBLE_X: u32 = 255;
 const LAST_VISIBLE_Y: u32 = 239;
@@ -60,7 +56,7 @@ impl Source for ApuSource {
     }
 
     fn sample_rate(&self) -> rodio::SampleRate {
-        NonZeroU32::new(44_100).unwrap()
+        NonZeroU32::new(APU_SAMPLE_RATE as u32).unwrap()
     }
 
     fn total_duration(&self) -> Option<Duration> {
@@ -204,7 +200,7 @@ impl App {
     }
 
     fn deadline_for_tick(&self, tick_number: u64) -> Instant {
-        let nanos = (tick_number as u128 * NANOS_PER_SECOND) / NES_TICK_HZ as u128;
+        let nanos: u128 = (tick_number as u128 * NANOS_PER_SECOND) / MASTER_CLOCK as u128;
         self.emulation_anchor + Duration::from_nanos(nanos.min(u64::MAX as u128) as u64)
     }
 
@@ -252,7 +248,7 @@ impl App {
         let elapsed_nanos = Instant::now()
             .saturating_duration_since(self.emulation_anchor)
             .as_nanos();
-        let target_ticks = (elapsed_nanos * NES_TICK_HZ as u128 / NANOS_PER_SECOND) as u64;
+        let target_ticks = (elapsed_nanos * MASTER_CLOCK as u128 / NANOS_PER_SECOND) as u64;
 
         while self.completed_ticks < target_ticks {
             self.tick_once();
