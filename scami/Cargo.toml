@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pixels = "0.15"
-winit = "0.30"
-log = "0.4.28"
+pixels = "0.17.1"
+winit = "0.30.13"
+log = "0.4.29"
 scamu = { path = "../scamu", version="0.1" }
 rodio = "0.22.2"
 
