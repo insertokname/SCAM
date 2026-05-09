@@ -212,6 +212,7 @@ impl Ppu {
                 let out = self.ppu_data_read_buffer;
                 if !peek {
                     self.ppu_data_read_buffer = self.read_ppu_bus(self.vram_address);
+                    self.increment_vram_address();
                 }
                 out
                 // } else {
@@ -286,14 +287,7 @@ impl Ppu {
             0x7 => {
                 self.write(self.vram_address, value);
 
-                let mut inc_ammount = 1;
-                if self
-                    .control_register
-                    .get_flag_enabled(control_flags::VRAM_INC)
-                {
-                    inc_ammount = 32;
-                }
-                self.vram_address = self.vram_address.wrapping_add(inc_ammount);
+                self.increment_vram_address();
             }
             _ => (), // TODO: impl rest of register writes
         };
@@ -925,6 +919,18 @@ impl Ppu {
             .pallet_memory
             .read_index(pallet_index as u16, pallet_collor_id as u16);
         constants::ppu::COLORS[color_id as usize]
+    }
+
+    fn increment_vram_address(&mut self) {
+        let inc_amount = if self
+            .control_register
+            .get_flag_enabled(control_flags::VRAM_INC)
+        {
+            32
+        } else {
+            1
+        };
+        self.vram_address = self.vram_address.wrapping_add(inc_amount);
     }
 
     fn get_background_pattern_address(&self) -> u16 {
