@@ -1,10 +1,13 @@
+- [ ] Move to workspace
+- [ ] Remove apu iterator trait + impl other sound channels
+- [ ] Remove cpu bus struct
+- [ ] Cleanup ppu by removing unused methods
+- [ ] use better default for all structs
+- [ ] remove wrapping add calls
+- [ ] Add tas
+- [ ] Remove dynamic dispatch
+- [ ] Optimiza addressing modes
+- [ ] More mappers
+- [ ] Save states
+- [ ] Speedup
 - impl PAL / other variants
-- move everything from cpu bus to cpu?
-- accurate memory fetching with ppu rendering
-- put all addressing mode reads to be optional
-- impl peek for cartriges
-- remove old shitty ppu methods
-- remove wrapping add calls
-- use better default for all structs
-- move from all apu components being iterators
-- fix apu audio delay when game is faster than 60 fps
