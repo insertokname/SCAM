@@ -34,8 +34,8 @@ pub struct Apu {
     /// If you are not using the default [MASTER_CLOCK](crate::hardware::constants::clock_rates::MASTER_CLOCK)
     /// value to tick the emulator, you should set this to your custom
     /// frequency you are ticking the nes at divided by 3 (the cpu runs
-    /// 3 times slower than the nes clock). 
-    /// 
+    /// 3 times slower than the nes clock).
+    ///
     /// Default value is: [CPU_CLOCK] (which is just MASTER_CLOCK / 3)
     #[default(CPU_CLOCK)]
     pub cpu_clock_frequency: u64,
