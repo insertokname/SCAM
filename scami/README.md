@@ -13,3 +13,11 @@ Controls:
 | B Button        | K           | X        |
 | Start           | Enter       | C        |
 | Select          | Right Shift | V        |
+
+
+# WASM:
+
+Requirements: 
+- `trunk`: install instructions here: https://github.com/trunk-rs/trunk.git
+
+To run the project run `trunk serve` for easy reloading or `trunk build` if you want a static output.

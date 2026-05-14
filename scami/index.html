@@ -7,8 +7,8 @@
     <link data-trunk rel="rust" data-wasm-opt="0" />
     <link data-trunk rel="copy-file" href="src/nestest.nes" />
     <link data-trunk rel="copy-file" href="src/AccuracyCoin.nes" />
-    <link data-trunk rel="copy-file" href="src/gitignored_games/dk.nes" />
-    <link data-trunk rel="copy-file" href="src/gitignored_games/smb.nes" />
+    <!-- <link data-trunk rel="copy-file" href="src/gitignored_games/dk.nes" />
+    <link data-trunk rel="copy-file" href="src/gitignored_games/smb.nes" /> -->
     <style>
       :root {
         --bg0-h: #1d2021;
@@ -308,7 +308,9 @@
 
     <div id="topbar">
       <span class="brand">S.C.A.M.</span>
-      <button id="load-btn" onclick="showLauncher()">load ROM...</button>
+      <button id="load-btn" onclick="showLauncher(); this.blur()">
+        load ROM...
+      </button>
       <span id="rom-name"></span>
       <span id="status">booting...</span>
     </div>
@@ -326,7 +328,7 @@
 
           <div class="card-title">Load a ROM</div>
 
-          <div>
+          <!-- <div>
             <div class="launcher-section-label">Games</div>
             <button
               class="launcher-btn accent-green"
@@ -342,7 +344,7 @@
             >
               <span class="btn-text">Super Mario Bros.</span>
             </button>
-          </div>
+          </div> -->
 
           <div>
             <div class="launcher-section-label">Testing ROMs</div>
@@ -550,6 +552,19 @@
           }
           setPaused(false);
           status.textContent = "running";
+          // Move focus away from any launcher button so that Enter/Space
+          // keypresses go to the emulator canvas instead of re-triggering
+          // the last-focused button.
+          if (
+            document.activeElement &&
+            document.activeElement !== document.body
+          ) {
+            document.activeElement.blur();
+          }
+          const canvas =
+            document.getElementById("nes-canvas") ||
+            document.querySelector("canvas");
+          if (canvas) canvas.focus();
         }
       };
 
@@ -557,6 +572,27 @@
         if (!hasLoadedRom) return;
         if (e.target === launcher) {
           hideLauncher();
+        }
+      });
+
+      // Prevent Enter/Space from re-firing the last focused launcher button
+      // after the launcher has already handled the action and closed.
+      // Also allow Escape to dismiss the launcher.
+      document.addEventListener("keydown", (e) => {
+        if (!launcher.classList.contains("gone")) {
+          // Launcher is open — let buttons handle Enter/Space normally,
+          // but swallow any stray Enter that has no focused target inside
+          // the launcher (e.g. focus already blurred after a click).
+          if (
+            (e.key === "Enter" || e.key === " ") &&
+            (!document.activeElement ||
+              !launcher.contains(document.activeElement))
+          ) {
+            e.preventDefault();
+          }
+          if (e.key === "Escape" && hasLoadedRom) {
+            hideLauncher();
+          }
         }
       });
 
