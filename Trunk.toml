@@ -1,0 +1,3 @@
+[build]
+public_url = "/scam/"
+target = "scami/index.html"

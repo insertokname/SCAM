@@ -12,6 +12,3 @@ better_default = "1.0.5"
 funty = "2.0.0"
 log = "0.4.28"
 thiserror = "2.0.17"
-
-[profile.dev]
-overflow-checks = false

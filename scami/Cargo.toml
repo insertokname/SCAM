@@ -1,5 +1,5 @@
 [package]
-name = "scami-rust"
+name = "scami"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,7 +7,7 @@ edition = "2024"
 pixels = "0.17.1"
 winit = "0.30.13"
 log = "0.4.29"
-scamu = { path = "../scamu", version="0.1" }
+scamu = { path = "../scamu" }
 web-time = "1.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -17,10 +17,13 @@ rodio = "0.22.2"
 console_error_panic_hook = "0.1.7"
 wasm-bindgen = "0.2.108"
 wasm-bindgen-futures = "0.4.58"
-web-sys = { version = "0.3.85", features = ["Document", "Element", "HtmlCanvasElement", "Node", "Window"] }
+web-sys = { version = "0.3.85", features = [
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "Node",
+    "Window",
+] }
 rodio = { version = "0.22.2", features = ["wasm-bindgen"] }
 wgpu = { version = "29.0.3", features = ["webgl"] }
 getrandom = { version = "0.4.2", features = ["wasm_js"] }
-
-[profile.dev]
-overflow-checks = false
