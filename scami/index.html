@@ -7,8 +7,6 @@
     <link data-trunk rel="rust" data-wasm-opt="0" />
     <link data-trunk rel="copy-file" href="src/nestest.nes" />
     <link data-trunk rel="copy-file" href="src/AccuracyCoin.nes" />
-    <!-- <link data-trunk rel="copy-file" href="src/gitignored_games/dk.nes" />
-    <link data-trunk rel="copy-file" href="src/gitignored_games/smb.nes" /> -->
     <style>
       :root {
         --bg0-h: #1d2021;
@@ -328,23 +326,23 @@
 
           <div class="card-title">Load a ROM</div>
 
-          <!-- <div>
+          <div>
             <div class="launcher-section-label">Games</div>
             <button
               class="launcher-btn accent-green"
               disabled
-              onclick="loadPredefined('dk.nes', 'dk.nes')"
+              onclick="loadPredefined(`https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FDonkey%20Kong%20%28JU%29.nes`, 'World/Donkey Kong (JU).nes')"
             >
               <span class="btn-text">Donkey kong</span>
             </button>
             <button
               class="launcher-btn accent-aqua"
               disabled
-              onclick="loadPredefined('smb.nes', 'smb.nes')"
+              onclick="loadPredefined(`https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FSuper%20Mario%20Bros%20%28JU%29%20%28PRG%200%29.nes`, 'World/Super Mario Bros (JU) (PRG 0).nes')"
             >
               <span class="btn-text">Super Mario Bros.</span>
             </button>
-          </div> -->
+          </div>
 
           <div>
             <div class="launcher-section-label">Testing ROMs</div>
