@@ -106,6 +106,37 @@
         margin-left: auto;
       }
 
+      /* -- fetch bar -- */
+      #fetch-bar {
+        display: none;
+        height: 4px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--bg3);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      #fetch-bar.active {
+        display: block;
+      }
+
+      .fetch-bar-fill {
+        height: 100%;
+        width: 30%;
+        background: var(--yellow);
+        animation: fetch-slide 1.1s linear infinite;
+        will-change: transform;
+      }
+
+      @keyframes fetch-slide {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(400%);
+        }
+      }
+
       /* -- canvas host -- */
       #canvas-host {
         flex: 1;
@@ -299,6 +330,29 @@
         font-size: var(--text-sm);
         font-family: inherit;
       }
+
+      /* -- toast -- */
+      #toast {
+        position: fixed;
+        top: 3.5rem;
+        right: 1rem;
+        z-index: 20;
+        background: var(--bg1);
+        border: 1px solid var(--orange);
+        color: var(--fg);
+        padding: 0.5rem 0.75rem;
+        font-size: var(--text-sm);
+        letter-spacing: 0.02em;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 0.2s, transform 0.2s;
+        pointer-events: none;
+      }
+
+      #toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
     </style>
   </head>
   <body>
@@ -312,6 +366,12 @@
       <span id="rom-name"></span>
       <span id="status">booting...</span>
     </div>
+
+    <div id="fetch-bar" aria-hidden="true">
+      <div class="fetch-bar-fill"></div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
 
     <div id="canvas-host">
       <div id="launcher">
@@ -420,10 +480,14 @@
       const launcherClose = document.getElementById("launcher-close");
       const loadBtn = document.getElementById("load-btn");
       const launcherBtns = document.querySelectorAll(".launcher-btn");
+      const fetchBar = document.getElementById("fetch-bar");
+      const toast = document.getElementById("toast");
 
       let wasmReady = false;
       let emulationStarted = false;
       let hasLoadedRom = false;
+
+      let toastTimer = null;
 
       // --- Tab-visibility pause state ---
       // True when the emulator was running but we auto-paused due to tab hide.
@@ -432,6 +496,21 @@
       function setPaused(paused) {
         const b = window.wasmBindings;
         if (b && typeof b.set_paused === "function") b.set_paused(paused);
+      }
+
+      function setFetchBarActive(active) {
+        if (!fetchBar) return;
+        fetchBar.classList.toggle("active", active);
+      }
+
+      function showToast(message) {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add("visible");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("visible");
+        }, 3200);
       }
 
       // ---------- tab-visibility guard ----------
@@ -602,6 +681,7 @@
         if (!wasmReady) return;
         ensureStarted();
         status.textContent = "fetching...";
+        setFetchBarActive(true);
         try {
           const resp = await fetch(path);
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -610,6 +690,9 @@
         } catch (err) {
           console.error(err);
           status.textContent = "fetch error";
+          showToast("Fetch failed. Check your connection or try another ROM.");
+        } finally {
+          setFetchBarActive(false);
         }
       };
 
