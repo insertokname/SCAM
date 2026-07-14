@@ -1,6 +1,6 @@
 
 
-see the [S.C.A.M.](https://github.com/insertokname/SCAM) project as a reference. 
+Live wasm version here: https://insertokname.github.io/SCAM/
 
 Controls:
 
