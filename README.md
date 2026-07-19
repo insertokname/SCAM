@@ -1,6 +1,6 @@
 
 
-Live wasm version here: https://insertokname.github.io/SCAM/
+Live wasm version here: https://scam.insertokname.com
 
 Controls:
 

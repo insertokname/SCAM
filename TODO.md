@@ -1,4 +1,5 @@
-- [ ] Move to workspace
+- [X] Move to workspace
+- [ ] Don't intercept all keyboard calls
 - [ ] Remove apu iterator trait + impl other sound channels
 - [ ] Remove cpu bus struct
 - [ ] Cleanup ppu by removing unused methods

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -345,7 +345,9 @@
         letter-spacing: 0.02em;
         opacity: 0;
         transform: translateY(-6px);
-        transition: opacity 0.2s, transform 0.2s;
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
         pointer-events: none;
       }
 
@@ -360,7 +362,13 @@
 
     <div id="topbar">
       <span class="brand">S.C.A.M.</span>
-      <button id="load-btn" onclick="showLauncher(); this.blur()">
+      <button
+        id="load-btn"
+        onclick="
+          showLauncher();
+          this.blur();
+        "
+      >
         load ROM...
       </button>
       <span id="rom-name"></span>
@@ -385,20 +393,38 @@
           </button>
 
           <div class="card-title">Load a ROM</div>
+          <div>
+            <p>still work in progress</p>
+            <ul style="padding-left: 1rem">
+              <li>250 ish mappers to go</li>
+              <li>some apu work</li>
+              <li>ux improvements</li>
+            </ul>
+          </div>
 
           <div>
             <div class="launcher-section-label">Games</div>
             <button
               class="launcher-btn accent-green"
               disabled
-              onclick="loadPredefined(`https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FDonkey%20Kong%20%28JU%29.nes`, 'World/Donkey Kong (JU).nes')"
+              onclick="
+                loadPredefined(
+                  `https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FDonkey%20Kong%20%28JU%29.nes`,
+                  'World/Donkey Kong (JU).nes',
+                )
+              "
             >
               <span class="btn-text">Donkey kong</span>
             </button>
             <button
               class="launcher-btn accent-aqua"
               disabled
-              onclick="loadPredefined(`https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FSuper%20Mario%20Bros%20%28JU%29%20%28PRG%200%29.nes`, 'World/Super Mario Bros (JU) (PRG 0).nes')"
+              onclick="
+                loadPredefined(
+                  `https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FSuper%20Mario%20Bros%20%28JU%29%20%28PRG%200%29.nes`,
+                  'World/Super Mario Bros (JU) (PRG 0).nes',
+                )
+              "
             >
               <span class="btn-text">Super Mario Bros.</span>
             </button>
