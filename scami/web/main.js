@@ -5,6 +5,7 @@ const launcher = document.getElementById("launcher");
 const launcherCard = document.getElementById("launcher-card");
 const launcherClose = document.getElementById("launcher-close");
 const loadBtn = document.getElementById("load-btn");
+const resetBtn = document.getElementById("reset-btn");
 const launcherBtns = document.querySelectorAll(".launcher-btn");
 const fetchBar = document.getElementById("fetch-bar-fill");
 const toast = document.getElementById("toast");
@@ -171,18 +172,24 @@ function ensureStarted() {
   if (b && typeof b.start_emulation === "function") b.start_emulation();
 }
 
+let currentRomBytes = null;
+let currentRomName = null;
+
 async function loadRomBytes(bytes, name) {
   const b = window.wasmBindings;
   if (!b || typeof b.load_rom !== "function") return false;
   status.textContent = "loading...";
   try {
     b.load_rom(new Uint8Array(bytes));
+    currentRomBytes = bytes;
+    currentRomName = name;
     romName.textContent = name;
     status.textContent = "running";
     if (!hasLoadedRom) {
       hasLoadedRom = true;
       launcherClose.classList.add("visible");
     }
+    resetBtn.disabled = false;
     hideLauncher();
     return true;
   } catch (err) {
@@ -372,3 +379,8 @@ if (previousPanic) {
   showToast(`Emulator restarted after a panic:\n${previousPanic}`);
   sessionStorage.removeItem(WASM_PANIC_MESSAGE);
 }
+
+window.resetGame = async function () {
+  if (!currentRomBytes || !currentRomName) return;
+  await loadRomBytes(currentRomBytes, currentRomName);
+};
