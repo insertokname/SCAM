@@ -113,6 +113,7 @@ body.rom-drag-active #rom-drop-overlay {
 }
 
 #toast {
+  white-space: pre-wrap;
   pointer-events: none;
   opacity: 0;
   transform: translateY(-0.4rem);

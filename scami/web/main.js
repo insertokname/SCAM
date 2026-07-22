@@ -188,7 +188,13 @@ async function loadRomBytes(bytes, name) {
   } catch (err) {
     console.error(err);
     status.textContent = "error";
-    showToast("Could not load that file. Choose a valid .nes ROM.");
+    let errStr = err.toString();
+    if (errStr.includes("UnknownMapperIdError")) {
+      let mapper_id = errStr.split("(")[1].split(")")[0];
+      showToast(`Mapper: ${mapper_id} not yet implemented in S.C.A.M.`);
+    } else {
+      showToast(`Could not load that file. Got unknown error: ${errStr}`);
+    }
     return false;
   }
 }
@@ -352,3 +358,17 @@ document.addEventListener("drop", async (event) => {
 });
 
 document.addEventListener("dragend", resetFileDrag);
+
+const WASM_PANIC_MESSAGE = "scam-wasm-message";
+
+window.recordRustPanic = (info) => {
+  sessionStorage.setItem(WASM_PANIC_MESSAGE, info);
+  location.reload();
+};
+
+const previousPanic = sessionStorage.getItem(WASM_PANIC_MESSAGE);
+
+if (previousPanic) {
+  showToast(`Emulator restarted after a panic:\n${previousPanic}`);
+  sessionStorage.removeItem(WASM_PANIC_MESSAGE);
+}

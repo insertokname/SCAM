@@ -37,8 +37,18 @@ fn main() {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = window, js_name = recordRustPanic)]
+    fn record_rust_panic(info: &str);
+}
+
+#[cfg(target_arch = "wasm32")]
 fn main() -> Result<(), JsValue> {
-    console_error_panic_hook::set_once();
+    std::panic::set_hook(Box::new(|info| {
+        record_rust_panic(&info.to_string());
+        console_error_panic_hook::hook(info);
+    }));
 
     let event_loop = EventLoop::new()
         .map_err(|err| JsValue::from_str(&format!("event loop init failed: {err:?}")))?;
