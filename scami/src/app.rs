@@ -16,17 +16,19 @@ use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize};
 use winit::event::{ElementState, KeyEvent, StartCause, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
+#[cfg(target_arch = "wasm32")]
+use winit::platform::web::WindowAttributesExtWebSys;
 use winit::window::{Window, WindowId};
 
 const NANOS_PER_SECOND: u128 = 1_000_000_000;
 const LAST_VISIBLE_X: u32 = 255;
 const LAST_VISIBLE_Y: u32 = 239;
-// Hard cap on how many master-clock ticks can be run in a single call to
-// run_due_ticks(). Without this, any gap in rAF scheduling (alt-tab, tab
-// switch, OS sleep) causes a massive catch-up burst that skips frames and
-// can hang the browser. Two frames at ~60 Hz is plenty of slack for normal
-// jitter while still being invisible to the player.
+// Maximum scheduling gap that the emulator will catch up. A larger gap means
+// the browser stopped scheduling us (for example during zoom, responsive-mode
+// resizing, a tab switch, or OS sleep), so the emulation clock is re-anchored
+// instead of carrying time debt into future events. Two frames at ~60 Hz is
+// plenty of slack for ordinary frame jitter.
 const MAX_CATCHUP_TICKS: u64 = MASTER_CLOCK as u64 / 30; // ≈ 2 frames at 60 Hz
 
 pub(crate) struct AudioState {
@@ -83,6 +85,7 @@ pub(crate) struct App {
     pub(crate) audio: Option<AudioState>,
     pub(crate) draw_buffer: Box<[u8; INIT_WIDTH * INIT_HEIGHT * 4]>,
     pub(crate) latched_buffer: Box<[u8; INIT_WIDTH * INIT_HEIGHT * 4]>,
+    modifiers: ModifiersState,
 }
 
 impl ApplicationHandler for App {
@@ -99,19 +102,15 @@ impl ApplicationHandler for App {
     }
 
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = Arc::new(
-            event_loop
-                .create_window(
-                    Window::default_attributes()
-                        .with_title("SCAM")
-                        .with_min_inner_size(PhysicalSize::new(
-                            INIT_WIDTH as u32,
-                            INIT_HEIGHT as u32,
-                        ))
-                        .with_inner_size(LogicalSize::new(INIT_WIDTH as f64, INIT_HEIGHT as f64)),
-                )
-                .unwrap(),
-        );
+        let window_attributes = Window::default_attributes()
+            .with_title("SCAM")
+            .with_min_inner_size(PhysicalSize::new(INIT_WIDTH as u32, INIT_HEIGHT as u32))
+            .with_inner_size(LogicalSize::new(INIT_WIDTH as f64, INIT_HEIGHT as f64));
+
+        #[cfg(target_arch = "wasm32")]
+        let window_attributes = window_attributes.with_prevent_default(false);
+
+        let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
         self.window = Some(window.clone());
 
@@ -155,12 +154,11 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::Resized(size) => {
-                if size.width > 0 && size.height > 0 {
-                    if let Some(pixels) = self.pixels.borrow_mut().as_mut() {
-                        let _ = pixels.resize_surface(size.width, size.height);
-                    }
-                }
+                platform::resize_surface(self.pixels.clone(), size.width, size.height);
                 window.request_redraw();
+            }
+            WindowEvent::ModifiersChanged(modifiers) => {
+                self.modifiers = modifiers.state();
             }
             WindowEvent::KeyboardInput {
                 event:
@@ -176,7 +174,15 @@ impl ApplicationHandler for App {
 
                 let pressed = state == ElementState::Pressed;
                 if let PhysicalKey::Code(keycode) = code {
-                    self.handle_controller_key(keycode, pressed);
+                    let has_shortcut_modifier = self.modifiers.control_key()
+                        || self.modifiers.alt_key()
+                        || self.modifiers.super_key();
+
+                    // Always accept releases so a modifier pressed midway
+                    // through an input cannot leave a controller button stuck.
+                    if !pressed || !has_shortcut_modifier {
+                        self.handle_controller_key(keycode, pressed);
+                    }
                 }
             }
             WindowEvent::RedrawRequested => {
@@ -206,6 +212,7 @@ impl App {
             audio: None,
             draw_buffer: Box::new([0; INIT_WIDTH * INIT_HEIGHT * 4]),
             latched_buffer: Box::new([0; INIT_WIDTH * INIT_HEIGHT * 4]),
+            modifiers: ModifiersState::default(),
         }
     }
 
@@ -247,14 +254,15 @@ impl App {
             .as_nanos();
         let target_ticks = (elapsed_nanos * MASTER_CLOCK as u128 / NANOS_PER_SECOND) as u64;
 
-        // Clamp the catch-up window. If the browser throttled rAF while the
-        // tab was hidden (alt-tab, tab switch, OS sleep), elapsed_nanos will be
-        // enormous and target_ticks will be millions of ticks ahead of
-        // completed_ticks. Running all of them at once causes a huge skip and
-        // can lock up the browser. We cap the burst to MAX_CATCHUP_TICKS; any
-        // larger gap is silently dropped — the JS side should also call
-        // reset_timestamp() on visibilitychange/focus to zero the debt cleanly.
-        let target_ticks = target_ticks.min(self.completed_ticks + MAX_CATCHUP_TICKS);
+        // Drop a large scheduling gap completely. Merely clamping this call to
+        // `completed_ticks + MAX_CATCHUP_TICKS` leaves the rest of the debt in
+        // place. Every subsequent resize, redraw, or key-repeat event then
+        // runs another maximum-sized burst, keeping the browser's main thread
+        // busy and making the page appear crashed.
+        if target_ticks.saturating_sub(self.completed_ticks) > MAX_CATCHUP_TICKS {
+            self.reset_timing();
+            return;
+        }
 
         while self.completed_ticks < target_ticks {
             self.tick_once();

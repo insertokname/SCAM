@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Nes";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/nes_font.woff2") format("woff2");
+}
+
+@theme static {
+  --font-nes: "Nes", "Courier New", monospace;
+
+  /* Official Gruvbox dark palette. */
+  --color-*: initial;
+  --color-dark0_hard: #1d2021;
+  --color-dark0: #282828;
+  --color-dark0_soft: #32302f;
+  --color-dark1: #3c3836;
+  --color-dark2: #504945;
+  --color-dark3: #665c54;
+  --color-dark4: #7c6f64;
+  --color-gray_245: #928374;
+
+  --color-light0: #fbf1c7;
+  --color-light1: #ebdbb2;
+  --color-light2: #d5c4a1;
+  --color-light3: #bdae93;
+  --color-light4: #a89984;
+  --color-light4_256: #a89984;
+
+  --color-bright_red: #fb4934;
+  --color-bright_green: #b8bb26;
+  --color-bright_yellow: #fabd2f;
+  --color-bright_blue: #83a598;
+  --color-bright_purple: #d3869b;
+  --color-bright_aqua: #8ec07c;
+  --color-bright_orange: #fe8019;
+
+  --color-neutral_red: #cc241d;
+  --color-neutral_green: #98971a;
+  --color-neutral_yellow: #d79921;
+  --color-neutral_blue: #458588;
+  --color-neutral_purple: #b16286;
+  --color-neutral_aqua: #689d6a;
+  --color-neutral_orange: #d65d0e;
+
+  --shadow-hard-sm: 4px 4px 0 var(--color-dark0_hard);
+  --shadow-hard-lg: 6px 6px 0 var(--color-dark0_hard);
+}
+
+@layer base {
+  ::selection {
+    background: var(--color-bright_yellow);
+    color: var(--color-dark0_hard);
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+#fetch-bar-fill {
+  animation: fetch-slide 1.1s linear infinite;
+  will-change: transform;
+}
+
+@keyframes fetch-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(500%);
+  }
+}
+
+#nes-,
+.nes-canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#launcher {
+  transition: opacity 120ms linear;
+}
+
+#launcher.gone {
+  pointer-events: none;
+  opacity: 0;
+}
+
+#launcher-close.visible {
+  display: block;
+}
+
+#toast {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-0.4rem);
+  transition:
+    opacity 120ms linear,
+    transform 120ms linear;
+}
+
+#toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #fetch-bar-fill {
+    animation-duration: 2.5s;
+  }
+
+  #launcher,
+  #toast {
+    transition: none;
+  }
+}
+
+/* Keep the game usable when browser zoom leaves very little vertical space. */
+@media (max-height: 24rem) {
+  #keybinds {
+    display: none;
+  }
+}
+
+.strikethrough {
+  position: relative;
+  display: inline-block;
+}
+
+.strikethrough::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--color-light1);
+  transform: translateY(-50%);
+  pointer-events: none;
+}

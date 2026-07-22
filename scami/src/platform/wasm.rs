@@ -58,15 +58,25 @@ pub fn load_rom(bytes: &[u8]) -> Result<(), JsValue> {
 pub(crate) fn setup_window(
     window: Arc<Window>,
     pixels_cell: Rc<RefCell<Option<Pixels<'static>>>>,
-    surface_width: u32,
-    surface_height: u32,
+    _surface_width: u32,
+    _surface_height: u32,
 ) {
     attach_canvas(&window);
 
     let window_for_pixels = window.clone();
     spawn_local(async move {
-        let surface_texture =
-            SurfaceTexture::new(surface_width, surface_height, window_for_pixels.clone());
+        // The emulator always renders 256x240 pixels. Keeping the browser's
+        // backing surface at that size lets CSS handle presentation scaling
+        // without feeding canvas layout changes back into winit's
+        // ResizeObserver. Reconfiguring the surface here on every browser
+        // resize also rewrites the canvas width/height attributes, which can
+        // create a resize loop when Firefox zoom or responsive mode changes
+        // the device-pixel ratio.
+        let surface_texture = SurfaceTexture::new(
+            INIT_WIDTH as u32,
+            INIT_HEIGHT as u32,
+            window_for_pixels.clone(),
+        );
 
         let mut pixels =
             pixels::PixelsBuilder::new(INIT_WIDTH as u32, INIT_HEIGHT as u32, surface_texture)
@@ -80,6 +90,16 @@ pub(crate) fn setup_window(
         *pixels_cell.borrow_mut() = Some(pixels);
         window_for_pixels.request_redraw();
     });
+}
+
+pub(crate) fn resize_surface(
+    _pixels_cell: Rc<RefCell<Option<Pixels<'static>>>>,
+    _width: u32,
+    _height: u32,
+) {
+    // CSS scales the fixed-resolution canvas on the web. Calling
+    // Pixels::resize_surface() would mutate its backing dimensions and feed
+    // another size into winit's ResizeObserver.
 }
 
 pub(crate) fn set_control_flow(event_loop: &ActiveEventLoop, _next_tick_deadline: WebInstant) {

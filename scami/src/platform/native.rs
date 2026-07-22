@@ -27,6 +27,20 @@ pub(crate) fn setup_window(
     *pixels_cell.borrow_mut() = Some(pixels);
 }
 
+pub(crate) fn resize_surface(
+    pixels_cell: Rc<RefCell<Option<Pixels<'static>>>>,
+    width: u32,
+    height: u32,
+) {
+    if width == 0 || height == 0 {
+        return;
+    }
+
+    if let Some(pixels) = pixels_cell.borrow_mut().as_mut() {
+        let _ = pixels.resize_surface(width, height);
+    }
+}
+
 pub(crate) fn set_control_flow(event_loop: &ActiveEventLoop, next_tick_deadline: WebInstant) {
     if RUN_UNCAPPED {
         event_loop.set_control_flow(ControlFlow::Poll);

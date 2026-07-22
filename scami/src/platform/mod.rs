@@ -27,6 +27,17 @@ pub(crate) fn setup_window(
     native::setup_window(window, pixels_cell, surface_width, surface_height);
 }
 
+pub(crate) fn resize_surface(
+    pixels_cell: Rc<RefCell<Option<Pixels<'static>>>>,
+    width: u32,
+    height: u32,
+) {
+    #[cfg(target_arch = "wasm32")]
+    wasm::resize_surface(pixels_cell, width, height);
+    #[cfg(not(target_arch = "wasm32"))]
+    native::resize_surface(pixels_cell, width, height);
+}
+
 pub(crate) fn set_control_flow(event_loop: &ActiveEventLoop, next_tick_deadline: WebInstant) {
     #[cfg(target_arch = "wasm32")]
     wasm::set_control_flow(event_loop, next_tick_deadline);
