@@ -99,6 +99,19 @@
   display: block;
 }
 
+#rom-drop-overlay {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 120ms linear,
+    visibility 120ms linear;
+}
+
+body.rom-drag-active #rom-drop-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
 #toast {
   pointer-events: none;
   opacity: 0;
@@ -119,6 +132,7 @@
   }
 
   #launcher,
+  #rom-drop-overlay,
   #toast {
     transition: none;
   }

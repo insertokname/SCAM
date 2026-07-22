@@ -12,6 +12,7 @@ const toast = document.getElementById("toast");
 let wasmReady = false;
 let emulationStarted = false;
 let hasLoadedRom = false;
+let fileDragDepth = 0;
 
 let toastTimer = null;
 
@@ -56,6 +57,23 @@ function showToast(message) {
   toastTimer = setTimeout(() => {
     toast.classList.remove("visible");
   }, 3200);
+}
+
+function isFileDrag(event) {
+  return Array.from(event.dataTransfer?.types || []).includes("Files");
+}
+
+function setDropOverlayVisible(visible) {
+  document.body.classList.toggle("rom-drag-active", visible);
+}
+
+function resetFileDrag() {
+  fileDragDepth = 0;
+  setDropOverlayVisible(false);
+}
+
+function isNesFile(file) {
+  return file.name.toLowerCase().endsWith(".nes");
 }
 
 function shouldCaptureEmulatorKey(event) {
@@ -155,20 +173,46 @@ function ensureStarted() {
 
 async function loadRomBytes(bytes, name) {
   const b = window.wasmBindings;
-  if (!b || typeof b.load_rom !== "function") return;
-  romName.textContent = name;
+  if (!b || typeof b.load_rom !== "function") return false;
   status.textContent = "loading...";
   try {
     b.load_rom(new Uint8Array(bytes));
+    romName.textContent = name;
     status.textContent = "running";
     if (!hasLoadedRom) {
       hasLoadedRom = true;
       launcherClose.classList.add("visible");
     }
     hideLauncher();
+    return true;
   } catch (err) {
     console.error(err);
     status.textContent = "error";
+    showToast("Could not load that file. Choose a valid .nes ROM.");
+    return false;
+  }
+}
+
+async function loadLocalFile(file) {
+  if (!isNesFile(file)) {
+    showToast("Only .nes ROM files can be loaded.");
+    return;
+  }
+
+  if (!wasmReady) {
+    showToast("The emulator is still starting. Try again in a moment.");
+    return;
+  }
+
+  ensureStarted();
+  status.textContent = "reading...";
+  try {
+    const buf = await file.arrayBuffer();
+    await loadRomBytes(buf, file.name);
+  } catch (err) {
+    console.error(err);
+    status.textContent = "read error";
+    showToast("The ROM file could not be read.");
   }
 }
 
@@ -263,14 +307,48 @@ window.loadPredefined = async function (path, name) {
 
 window.openFilePicker = function () {
   if (!wasmReady) return;
-  ensureStarted();
   romInput.click();
 };
 
 romInput.addEventListener("change", async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
-  const buf = await file.arrayBuffer();
-  await loadRomBytes(buf, file.name);
+  await loadLocalFile(file);
   e.target.value = "";
 });
+
+document.addEventListener("dragenter", (event) => {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  fileDragDepth += 1;
+  setDropOverlayVisible(true);
+});
+
+document.addEventListener("dragover", (event) => {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+});
+
+document.addEventListener("dragleave", (event) => {
+  if (!isFileDrag(event)) return;
+  fileDragDepth = Math.max(0, fileDragDepth - 1);
+  if (fileDragDepth === 0) setDropOverlayVisible(false);
+});
+
+document.addEventListener("drop", async (event) => {
+  const files = Array.from(event.dataTransfer?.files || []);
+  if (!isFileDrag(event) && files.length === 0) return;
+
+  event.preventDefault();
+  resetFileDrag();
+
+  if (files.length !== 1) {
+    showToast("Drop one .nes file at a time.");
+    return;
+  }
+
+  await loadLocalFile(files[0]);
+});
+
+document.addEventListener("dragend", resetFileDrag);

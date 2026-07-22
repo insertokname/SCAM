@@ -1,5 +1,8 @@
 - [X] Move to workspace
-- [ ] Don't intercept all keyboard calls
+- [X] Don't intercept all keyboard calls
+- [ ] reset button for emulator
+- [X] drag and drop nes file
+- [ ] mapper unsupported error
 - [ ] Remove apu iterator trait + impl other sound channels
 - [ ] Remove cpu bus struct
 - [ ] Cleanup ppu by removing unused methods

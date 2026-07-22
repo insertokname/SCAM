@@ -131,6 +131,26 @@
                     <h2
                       class="mb-2 text-xs uppercase tracking-widest text-light4"
                     >
+                      Your cartridge
+                    </h2>
+                    <button
+                      class="launcher-btn w-full border border-bright_yellow bg-dark2 px-3 py-2 text-left text-xs text-bright_yellow hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+                      id="btn-file"
+                      type="button"
+                      disabled
+                      onclick="openFilePicker()"
+                    >
+                      Open a .nes file...
+                    </button>
+                    <p class="mt-2 text-[0.65rem] text-light4">
+                      or drag and drop one anywhere
+                    </p>
+                  </section>
+
+                  <section>
+                    <h2
+                      class="mb-2 text-xs uppercase tracking-widest text-light4"
+                    >
                       Games
                     </h2>
                     <div class="space-y-2">
@@ -194,23 +214,6 @@
                       </button>
                     </div>
                   </section>
-
-                  <section>
-                    <h2
-                      class="mb-2 text-xs uppercase tracking-widest text-light4"
-                    >
-                      Your cartridge
-                    </h2>
-                    <button
-                      class="launcher-btn w-full border border-bright_yellow bg-dark2 px-3 py-2 text-left text-xs text-bright_yellow hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
-                      id="btn-file"
-                      type="button"
-                      disabled
-                      onclick="openFilePicker()"
-                    >
-                      Open a .nes file...
-                    </button>
-                  </section>
                 </div>
               </div>
             </div>
@@ -254,6 +257,18 @@
       role="status"
       aria-live="polite"
     ></div>
+    <div
+      id="rom-drop-overlay"
+      class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-dark0_hard/90 p-4"
+      aria-hidden="true"
+    >
+      <div
+        class="w-full max-w-xl border-2 border-dashed border-bright_yellow bg-dark0 p-8 text-center shadow-hard-lg"
+      >
+        <p class="text-lg tracking-widest text-bright_yellow">DROP CARTRIDGE</p>
+        <p class="mt-3 text-xs text-light1">Release one .nes file to load it</p>
+      </div>
+    </div>
     <script data-trunk src="/web/main.js"></script>
   </body>
 </html>
