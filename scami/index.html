@@ -63,6 +63,13 @@
 
     <div class="w-full mx-auto flex max-w-4xl justify-end gap-2">
       <button
+        id="touch-toggle"
+        class="my-2 border border-dark3 bg-dark2 px-2 py-1 text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow hidden"
+        type="button"
+      >
+        hide controls
+      </button>
+      <button
         id="reset-btn"
         class="my-2 border border-light3 bg-dark2 px-2 py-1 text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
         type="button"
@@ -269,6 +276,75 @@
       role="status"
       aria-live="polite"
     ></div>
+
+    <!-- Touch Controls Overlay -->
+    <div
+      id="touch-controls"
+      class="pointer-events-none fixed inset-x-0 bottom-0 z-40 p-4 opacity-0 transition-opacity duration-200 touch-none [&.visible]:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:hidden"
+    >
+      <div class="pointer-events-auto flex w-full justify-between">
+        <!-- D-Pad -->
+        <div class="relative h-32 w-32">
+          <button
+            data-btn="up"
+            class="absolute left-1/2 top-0 h-10 w-10 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            ▲
+          </button>
+          <button
+            data-btn="down"
+            class="absolute bottom-0 left-1/2 h-10 w-10 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            ▼
+          </button>
+          <button
+            data-btn="left"
+            class="absolute left-0 top-1/2 h-10 w-10 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            ◀
+          </button>
+          <button
+            data-btn="right"
+            class="absolute right-0 top-1/2 h-10 w-10 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            ▶
+          </button>
+        </div>
+
+        <!-- Center buttons -->
+        <div class="flex items-end justify-center gap-3 pb-4">
+          <button
+            data-btn="select"
+            class="text-[0.6rem] flex items-center justify-center w-12 h-6 border border-dark3 rounded bg-dark0_hard text-light4 opacity-50 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark1 [&.pressed]:bg-dark1"
+          >
+            SEL
+          </button>
+          <button
+            data-btn="start"
+            class="text-[0.6rem] flex items-center justify-center w-12 h-6 border border-dark3 rounded bg-dark0_hard text-light4 opacity-50 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark1 [&.pressed]:bg-dark1"
+          >
+            START
+          </button>
+        </div>
+
+        <!-- A/B buttons -->
+        <div class="relative h-32 w-32">
+          <button
+            data-btn="b"
+            class="absolute bottom-4 left-0 h-12 w-12 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            B
+          </button>
+          <button
+            data-btn="a"
+            class="absolute right-0 top-4 h-14 w-14 text-lg flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+          >
+            A
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div
       id="rom-drop-overlay"
       class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-dark0_hard/90 p-4"

@@ -384,3 +384,85 @@ window.resetGame = async function () {
   if (!currentRomBytes || !currentRomName) return;
   await loadRomBytes(currentRomBytes, currentRomName);
 };
+
+// ---------- Touch Controls ----------
+const touchControls = document.getElementById("touch-controls");
+const touchToggle = document.getElementById("touch-toggle");
+const keybinds = document.getElementById("keybinds");
+
+const buttonMap = {
+  up: ["KeyW", "ArrowUp"],
+  down: ["KeyS", "ArrowDown"],
+  left: ["KeyA", "ArrowLeft"],
+  right: ["KeyD", "ArrowRight"],
+  a: ["KeyJ", "KeyZ"],
+  b: ["KeyK", "KeyX"],
+  start: ["Enter", "KeyC"],
+  select: ["ShiftRight", "KeyV"],
+};
+
+let touchEnabled = localStorage.getItem("touchControls") !== "false";
+
+function isTouchDevice() {
+  return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+}
+
+function updateTouchVisibility() {
+  const isTouch = isTouchDevice();
+  touchToggle.classList.toggle("hidden", !isTouch);
+
+  if (isTouch && touchEnabled) {
+    touchControls.classList.add("visible");
+    keybinds.style.display = "none";
+  } else {
+    touchControls.classList.remove("visible");
+    keybinds.style.display = "";
+  }
+  touchToggle.textContent = touchEnabled ? "hide controls" : "show controls";
+}
+
+function dispatchKeyEvent(code, type) {
+  const canvas = document.getElementById("nes-canvas");
+  if (!canvas) return;
+
+  const event = new KeyboardEvent(type, {
+    code: code,
+    key: code,
+    bubbles: true,
+  });
+  canvas.dispatchEvent(event);
+}
+
+Object.keys(buttonMap).forEach((btn) => {
+  const el = document.querySelector(`[data-btn="${btn}"]`);
+  if (!el) return;
+
+  const codes = buttonMap[btn];
+
+  el.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    el.classList.add("pressed");
+    codes.forEach((code) => dispatchKeyEvent(code, "keydown"));
+  });
+
+  el.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    el.classList.remove("pressed");
+    codes.forEach((code) => dispatchKeyEvent(code, "keyup"));
+  });
+
+  el.addEventListener("touchcancel", (e) => {
+    el.classList.remove("pressed");
+    codes.forEach((code) => dispatchKeyEvent(code, "keyup"));
+  });
+});
+
+touchToggle.addEventListener("click", () => {
+  touchEnabled = !touchEnabled;
+  localStorage.setItem("touchControls", touchEnabled);
+  updateTouchVisibility();
+});
+
+updateTouchVisibility();
+window.addEventListener("resize", updateTouchVisibility);
+// ------------------------------------
