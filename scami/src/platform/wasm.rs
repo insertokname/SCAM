@@ -80,7 +80,7 @@ pub(crate) fn setup_window(
 
         let mut pixels =
             pixels::PixelsBuilder::new(INIT_WIDTH as u32, INIT_HEIGHT as u32, surface_texture)
-                .surface_texture_format(pixels::wgpu::TextureFormat::Bgra8Unorm)
+                .surface_texture_format(pixels::wgpu::TextureFormat::Rgba8Unorm)
                 .texture_format(pixels::wgpu::TextureFormat::Rgba8Unorm)
                 .build_async()
                 .await
