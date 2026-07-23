@@ -155,7 +155,9 @@ impl Cpu {
         if self.cycles_left > 0 {
             self.cycles_left -= 1;
         } else {
+            #[cfg(feature = "cpu_logger")]
             let instruction_location = self.program_counter;
+
             let instruction_code = bus.peek(self.program_counter);
 
             self.program_counter += 1;
@@ -168,30 +170,33 @@ impl Cpu {
             // on the 6502 so yeah
             self.program_counter += next_instruction.next_instruction_offset();
 
-            let length = 1 + next_instruction.next_instruction_offset() as usize;
-            let mut bytes = Vec::with_capacity(length);
-            for i in 0..length {
-                bytes.push(bus.peek(instruction_location + i as u16));
+            #[cfg(feature = "cpu_logger")]
+            {
+                let length = 1 + next_instruction.next_instruction_offset() as usize;
+                let mut bytes = Vec::with_capacity(length);
+                for i in 0..length {
+                    bytes.push(bus.peek(instruction_location + i as u16));
+                }
+                let byte_str = match length {
+                    1 => format!("{:02X}      ", bytes[0]),
+                    2 => format!("{:02X} {:02X}   ", bytes[0], bytes[1]),
+                    3 => format!("{:02X} {:02X} {:02X}", bytes[0], bytes[1], bytes[2]),
+                    _ => unreachable!(),
+                };
+                let disasm = next_instruction.disassemble_instruction();
+                log::info!(
+                    "{:04X}  {} {:<33}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:{}",
+                    instruction_location,
+                    byte_str,
+                    disasm,
+                    self.accumulator,
+                    self.x,
+                    self.y,
+                    self.status,
+                    self.stack_pointer,
+                    self.total_cycles
+                );
             }
-            let byte_str = match length {
-                1 => format!("{:02X}      ", bytes[0]),
-                2 => format!("{:02X} {:02X}   ", bytes[0], bytes[1]),
-                3 => format!("{:02X} {:02X} {:02X}", bytes[0], bytes[1], bytes[2]),
-                _ => unreachable!(),
-            };
-            let disasm = next_instruction.disassemble_instruction();
-            log::info!(
-                "{:04X}  {} {:<33}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:{}",
-                instruction_location,
-                byte_str,
-                disasm,
-                self.accumulator,
-                self.x,
-                self.y,
-                self.status,
-                self.stack_pointer,
-                self.total_cycles
-            );
 
             let required_cycles = next_instruction.execute(self, bus);
             self.cycles_left += required_cycles;

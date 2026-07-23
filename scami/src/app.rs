@@ -33,6 +33,7 @@ const MAX_CATCHUP_TICKS: u64 = MASTER_CLOCK as u64 / 30; // ≈ 2 frames at 60 H
 
 pub(crate) struct AudioState {
     _handle: rodio::MixerDeviceSink,
+    #[allow(unused)]
     pub(crate) player: rodio::Player,
 }
 

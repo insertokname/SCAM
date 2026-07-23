@@ -32,6 +32,7 @@ impl AddressingMode<()> for ImplicitAddressingMode {
 
     fn write(&mut self, _: (), _: &mut Cpu, _: &mut CpuBus) {}
 
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str {
         ""
     }
@@ -40,6 +41,7 @@ impl AddressingMode<()> for ImplicitAddressingMode {
 pub(crate) struct AccumulatorAddressingMode {
     pub(crate) cpu_program_counter_offset: u16,
     pub(crate) cpu_additional_cycles_required: u8,
+    #[cfg(feature = "cpu_logger")]
     pub(crate) display: String,
 }
 
@@ -64,6 +66,7 @@ impl AddressingMode<u8> for AccumulatorAddressingMode {
         cpu.accumulator = new_value;
     }
 
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str {
         &self.display
     }
@@ -73,6 +76,7 @@ pub(crate) struct MemoryAddressingMode {
     pub(crate) address: u16,
     pub(crate) cpu_program_counter_offset: u16,
     pub(crate) cpu_additional_cycles_required: u8,
+    #[cfg(feature = "cpu_logger")]
     pub(crate) display: String,
 }
 
@@ -97,6 +101,7 @@ impl AddressingMode<u8> for MemoryAddressingMode {
         bus.write(self.address, new_value);
     }
 
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str {
         &self.display
     }
@@ -126,6 +131,7 @@ impl AddressingMode<MemoryAddress> for MemoryAddressingMode {
         bus.write(self.address, new_value.value);
     }
 
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str {
         &self.display
     }
@@ -135,6 +141,7 @@ pub(crate) struct RelativeAddressingMode {
     pub(crate) address: u16,
     pub(crate) cpu_program_counter_offset: u16,
     pub(crate) cpu_additional_cycles_required: u8,
+    #[cfg(feature = "cpu_logger")]
     pub(crate) display: String,
 }
 
@@ -159,6 +166,7 @@ impl AddressingMode<i8> for RelativeAddressingMode {
         bus.write(self.address, new_value as u8);
     }
 
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str {
         &self.display
     }

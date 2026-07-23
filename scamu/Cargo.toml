@@ -3,6 +3,9 @@ name = "scamu"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+cpu_logger = []
+
 [lib]
 name = "scamu"
 crate-type = ["rlib", "staticlib", "dylib"]

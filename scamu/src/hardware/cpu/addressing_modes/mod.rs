@@ -23,5 +23,6 @@ pub(super) trait AddressingMode<T: Debug> {
     fn cpu_add_another_required_cycle(&mut self);
     fn read(&self, cpu: &Cpu, bus: &CpuBus) -> T;
     fn write(&mut self, new_value: T, cpu: &mut Cpu, bus: &mut CpuBus);
+    #[cfg(feature = "cpu_logger")]
     fn display(&self) -> &str;
 }

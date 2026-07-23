@@ -23,10 +23,12 @@ use crate::hardware::{
 
 pub(super) struct Instruction<T> {
     operation: Operation<T>,
+    #[cfg(feature = "cpu_logger")]
     operation_name: &'static str,
     addressing_mode: Box<dyn AddressingMode<T>>,
     cycles: u8,
     can_require_extra_cycles: bool,
+    #[cfg(feature = "cpu_logger")]
     is_illegal: bool,
 }
 
@@ -36,6 +38,7 @@ pub trait InstructionTrait {
     fn execute(&mut self, cpu: &mut Cpu, bus: &mut CpuBus) -> u8;
     /// # Returns:
     /// The disassembled version of the instruction in string slice
+    #[cfg(feature = "cpu_logger")]
     fn disassemble_instruction(&self) -> String;
     /// # Returns:
     /// The number you have to add to the program counter to go to the
@@ -53,6 +56,8 @@ impl<T: Debug> InstructionTrait for Instruction<T> {
         };
         self.cycles + extra_cycles
     }
+
+    #[cfg(feature = "cpu_logger")]
     fn disassemble_instruction(&self) -> String {
         format!(
             "{}{} {}",
@@ -69,10 +74,12 @@ impl<T: Debug> InstructionTrait for Instruction<T> {
 
 pub(super) struct InstructionFactory<T, AM> {
     operation: Operation<T>,
+    #[cfg(feature = "cpu_logger")]
     operation_name: &'static str,
     addressing_mode_factory: AddressingModeFactory<AM>,
     cycles: u8,
     can_require_extra_cycles: bool,
+    #[cfg(feature = "cpu_logger")]
     is_illegal: bool,
 }
 
@@ -90,8 +97,10 @@ impl<T: 'static + Debug, AM: AddressingMode<T> + 'static> InstructionFactoryTrai
             operation: self.operation,
             addressing_mode: (self.addressing_mode_factory)(cpu, bus),
             cycles: self.cycles,
+            #[cfg(feature = "cpu_logger")]
             operation_name: self.operation_name,
             can_require_extra_cycles: self.can_require_extra_cycles,
+            #[cfg(feature = "cpu_logger")]
             is_illegal: self.is_illegal,
         })
     }
@@ -101,9 +110,9 @@ fn instruction_factory<T, AM>(
     operation: Operation<T>,
     mode: AddressingModeFactory<AM>,
     cycles: u8,
-    name: &'static str,
+    #[allow(unused)] name: &'static str,
     can_require_extra_cycles: bool,
-    is_illegal: bool,
+    #[allow(unused)] is_illegal: bool,
 ) -> Box<dyn InstructionFactoryTrait>
 where
     T: 'static + Debug,
@@ -113,8 +122,10 @@ where
         operation,
         addressing_mode_factory: mode,
         cycles,
+        #[cfg(feature = "cpu_logger")]
         operation_name: name,
         can_require_extra_cycles,
+        #[cfg(feature = "cpu_logger")]
         is_illegal,
     })
 }

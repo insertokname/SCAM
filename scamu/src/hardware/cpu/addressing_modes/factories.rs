@@ -8,6 +8,7 @@ use crate::hardware::{cpu::Cpu, cpu_bus::CpuBus};
 
 use super::implementations::*;
 
+#[allow(dead_code)]
 fn format_hex_u8(value: u8) -> String {
     format!("${value:02X}")
 }
@@ -19,7 +20,7 @@ fn format_hex_u8(value: u8) -> String {
 //         format!("${:02X}", value as u8)
 //     }
 // }
-
+#[allow(dead_code)]
 fn format_hex_u16(value: u16) -> String {
     format!("${value:04X}")
 }
@@ -45,6 +46,7 @@ pub(crate) const ACCUMULATOR: fn(cpu: &Cpu, bus: &CpuBus) -> Box<AccumulatorAddr
         Box::new(AccumulatorAddressingMode {
             cpu_program_counter_offset: 0,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("A"),
         })
     };
@@ -52,16 +54,19 @@ pub(crate) const ACCUMULATOR: fn(cpu: &Cpu, bus: &CpuBus) -> Box<AccumulatorAddr
 /// Immediate addressing mode
 ///
 /// Gets the next byte as the argument
+#[allow(unused_variables)]
 pub(crate) const IMMEDIATE: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressingMode> =
     |cpu: &Cpu, bus: &CpuBus| {
         let address = cpu.program_counter;
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(address);
 
         Box::new(MemoryAddressingMode {
             address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("#{}", format_hex_u8(value)),
         })
     };
@@ -82,12 +87,14 @@ pub(crate) const ZERO_PAGE: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressingM
     |cpu: &Cpu, bus: &CpuBus| {
         let address = bus.peek(cpu.program_counter) as u16;
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(address);
 
         Box::new(MemoryAddressingMode {
             address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("{} = {value:02X}", format_hex_u8(address as u8),),
         })
     };
@@ -110,12 +117,14 @@ pub(crate) const ZERO_PAGE_X_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAd
         let argument = cpu.program_counter;
         let address = bus.peek(argument);
         let offset_address = address.wrapping_add(cpu.x) as u16;
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(offset_address);
 
         Box::new(MemoryAddressingMode {
             address: offset_address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "{},X @ {offset_address:02X} = {value:02X}",
                 format_hex_u8(address as u8)
@@ -141,12 +150,14 @@ pub(crate) const ZERO_PAGE_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAd
         let argument = cpu.program_counter;
         let address = bus.peek(argument);
         let offset_address = address.wrapping_add(cpu.y) as u16;
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(offset_address);
 
         Box::new(MemoryAddressingMode {
             address: offset_address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "{},Y @ {offset_address:02X} = {value:02X}",
                 format_hex_u8(address as u8)
@@ -168,12 +179,14 @@ pub(crate) const ABSOLUTE: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressingMo
     |cpu: &Cpu, bus: &CpuBus| {
         let address = bus.peek_u16(cpu.program_counter);
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(address);
 
         Box::new(MemoryAddressingMode {
             address,
             cpu_program_counter_offset: 2,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("{} = {value:02X}", format_hex_u16(address)),
         })
     };
@@ -187,6 +200,7 @@ pub(crate) const ABSOLUTE_JMP: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressi
             address,
             cpu_program_counter_offset: 2,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("{}", format_hex_u16(address)),
         })
     };
@@ -202,6 +216,7 @@ pub(crate) const ABSOLUTE_JMP: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressi
 //         address,
 //         cpu_program_counter_offset: 2,
 //         cpu_additional_cycles_required: 0,
+//         #[cfg(feature = "cpu_logger")]
 //         display: format!("{}", format_hex_u16(address)),
 //     })
 // };
@@ -220,6 +235,7 @@ pub(crate) const ABSOLUTE_X_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
     |cpu: &Cpu, bus: &CpuBus| {
         let address = bus.peek_u16(cpu.program_counter);
         let offset_address = address + cpu.x as u16;
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(offset_address);
 
         let add_cycle = offset_address & 0xFF00 != address & 0xFF00;
@@ -228,6 +244,7 @@ pub(crate) const ABSOLUTE_X_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
             address: offset_address,
             cpu_program_counter_offset: 2,
             cpu_additional_cycles_required: add_cycle as u8,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "{},X @ {offset_address:04X} = {value:02X}",
                 format_hex_u16(address)
@@ -249,6 +266,7 @@ pub(crate) const ABSOLUTE_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
     |cpu: &Cpu, bus: &CpuBus| {
         let address = bus.peek_u16(cpu.program_counter);
         let offset_address = address.wrapping_add(cpu.y as u16);
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(offset_address);
 
         let add_cycle = offset_address & 0xFF00 != address & 0xFF00;
@@ -257,6 +275,7 @@ pub(crate) const ABSOLUTE_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
             address: offset_address,
             cpu_program_counter_offset: 2,
             cpu_additional_cycles_required: add_cycle as u8,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "{},Y @ {offset_address:04X} = {value:02X}",
                 format_hex_u16(address)
@@ -286,6 +305,7 @@ pub(crate) const ABSOLUTE_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
 //             address: offset_address,
 //             cpu_program_counter_offset: 2,
 //             cpu_additional_cycles_required: add_cycle as u8,
+//             #[cfg(feature = "cpu_logger")]
 //             display: format!(
 //                 "{},Y @ {offset_address:04X} = {value:02X}",
 //                 format_hex_u16(address)
@@ -337,6 +357,7 @@ pub(crate) const INDIRECT: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAddressingMo
             address,
             cpu_program_counter_offset: 2,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!("({}) = {address:04X}", format_hex_u16(pointer_address)),
         })
     };
@@ -357,12 +378,14 @@ pub(crate) const INDIRECT_X_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
         let high = bus.peek(high_address) as u16;
         let address = (high << 8) | low;
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(address);
 
         Box::new(MemoryAddressingMode {
             address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "({},X) @ {pointer_address:02X} = {address:04X} = {value:02X}",
                 format_hex_u8(argument)
@@ -385,13 +408,16 @@ pub(crate) const INDIRECT_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
         let offset_address = address.wrapping_add(cpu.y as u16);
         let add_cycle = offset_address & 0xFF00 != address & 0xFF00;
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(offset_address);
 
         Box::new(MemoryAddressingMode {
             address: offset_address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: add_cycle as u8,
+            #[cfg(feature = "cpu_logger")]
             // display: format!("({}),y", format_hex_u16(address)),
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "({}),Y = {address:04X} @ {offset_address:04X} = {value:02X}",
                 format_hex_u8(argument as u8)
@@ -420,7 +446,9 @@ pub(crate) const INDIRECT_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
 //             address: offset_address,
 //             cpu_program_counter_offset: 1,
 //             cpu_additional_cycles_required: add_cycle as u8,
+//             #[cfg(feature = "cpu_logger")]
 //             // display: format!("({}),y", format_hex_u16(address)),
+//             #[cfg(feature = "cpu_logger")]
 //             display: format!(
 //                 "({}),Y = {address:04X} @ {offset_address:04X} = {value:02X}",
 //                 format_hex_u8(argument as u8)
@@ -431,16 +459,19 @@ pub(crate) const INDIRECT_Y_OFFSET: fn(cpu: &Cpu, bus: &CpuBus) -> Box<MemoryAdd
 /// Relative addressing mode
 ///
 /// Only branch instructions use this.
+#[allow(unused_variables)]
 pub(crate) const RELATIVE: fn(cpu: &Cpu, bus: &CpuBus) -> Box<RelativeAddressingMode> =
     |cpu: &Cpu, bus: &CpuBus| {
         let address = cpu.program_counter;
 
+        #[cfg(feature = "cpu_logger")]
         let value = bus.peek(address) as i8;
 
         Box::new(RelativeAddressingMode {
             address,
             cpu_program_counter_offset: 1,
             cpu_additional_cycles_required: 0,
+            #[cfg(feature = "cpu_logger")]
             display: format!(
                 "{}",
                 format_hex_u16(((address as i32) + (value as i32) + 1) as u16)
