@@ -125,6 +125,8 @@ body.rom-drag-active #rom-drop-overlay {
 #toast.visible {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -140,9 +142,50 @@ body.rom-drag-active #rom-drop-overlay {
 }
 
 /* Keep the game usable when browser zoom leaves very little vertical space. */
-@media (max-height: 24rem) {
-  #keybinds {
+@media (max-height: 30rem) {
+  #keybinds,
+  nav {
     display: none;
+  }
+
+  #main-layout {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: 1fr;
+    gap: 1rem;
+  }
+
+  #top-toolbar {
+    display: contents;
+  }
+
+  #toolbar-left {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    flex-direction: column;
+    margin-top: 1rem;
+  }
+
+  #toolbar-left > button {
+    margin: 0;
+  }
+
+  #toolbar-right {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    flex-direction: column;
+    margin-top: 1rem;
+  }
+
+  #toolbar-right > button {
+    margin: 0;
+  }
+
+  #canvas-host {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
 
@@ -163,3 +206,28 @@ body.rom-drag-active #rom-drop-overlay {
   pointer-events: none;
 }
 
+#canvas-host:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  border: none;
+  background-color: black;
+}
+
+#canvas-host:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  border: none;
+  background-color: black;
+}
+
+#fullscreen-exit-btn {
+  display: none;
+}
+
+#canvas-host:-webkit-full-screen #fullscreen-exit-btn {
+  display: block;
+}
+
+#canvas-host:fullscreen #fullscreen-exit-btn {
+  display: block;
+}

@@ -60,6 +60,13 @@ function showToast(message) {
   }, 3200);
 }
 
+if (toast) {
+  toast.addEventListener("click", () => {
+    toast.classList.remove("visible");
+    if (toastTimer) clearTimeout(toastTimer);
+  });
+}
+
 function isFileDrag(event) {
   return Array.from(event.dataTransfer?.types || []).includes("Files");
 }
@@ -77,8 +84,14 @@ function isNesFile(file) {
   return file.name.toLowerCase().endsWith(".nes");
 }
 
+let cachedNesCanvas = null;
+function getNesCanvas() {
+  if (!cachedNesCanvas) cachedNesCanvas = document.getElementById("nes-canvas");
+  return cachedNesCanvas;
+}
+
 function shouldCaptureEmulatorKey(event) {
-  const canvas = document.getElementById("nes-canvas");
+  const canvas = getNesCanvas();
   if (!canvas) return false;
 
   const canvasHasEvent =
@@ -432,6 +445,8 @@ window.resetGame = async function () {
 // ---------- Touch Controls ----------
 const touchControls = document.getElementById("touch-controls");
 const touchToggle = document.getElementById("touch-toggle");
+const fullscreenBtn = document.getElementById("fullscreen-btn");
+const fullscreenExitBtn = document.getElementById("fullscreen-exit-btn");
 const keybinds = document.getElementById("keybinds");
 
 const buttonMap = {
@@ -455,18 +470,41 @@ function updateTouchVisibility() {
   const isTouch = isTouchDevice();
   touchToggle.classList.toggle("hidden", !isTouch);
 
+  const mainElement = document.querySelector("main");
+  const launcher = document.getElementById("launcher");
+
   if (isTouch && touchEnabled) {
     touchControls.classList.add("visible");
     keybinds.style.display = "none";
+    
+    const touchHeight = touchControls.getBoundingClientRect().height;
+    
+    // In portrait mode, we can pad the entire main element because width is the limiting 
+    // factor for the game canvas, so padding simply pushes the game and menus up.
+    // In landscape mode, height is the limiting factor. Shrinking main makes the game 
+    // tiny! Instead, we only pad the launcher menu so it remains scrollable, allowing
+    // the game canvas to use the full screen height (controls naturally sit on the sides).
+    if (window.innerHeight > window.innerWidth) {
+      if (mainElement) mainElement.style.paddingBottom = `${touchHeight + 12}px`;
+      if (launcher) launcher.style.paddingBottom = "";
+    } else {
+      if (mainElement) mainElement.style.paddingBottom = "";
+      if (launcher) launcher.style.paddingBottom = `${touchHeight + 12}px`;
+    }
+    
+    // Defer updating rects until after the layout changes have been fully applied
+    requestAnimationFrame(updateButtonRects);
   } else {
     touchControls.classList.remove("visible");
     keybinds.style.display = "";
+    if (mainElement) mainElement.style.paddingBottom = "";
+    if (launcher) launcher.style.paddingBottom = "";
   }
   touchToggle.textContent = touchEnabled ? "hide controls" : "show controls";
 }
 
 function dispatchKeyEvent(code, type) {
-  const canvas = document.getElementById("nes-canvas");
+  const canvas = getNesCanvas();
   if (!canvas) return;
 
   const event = new KeyboardEvent(type, {
@@ -477,29 +515,82 @@ function dispatchKeyEvent(code, type) {
   canvas.dispatchEvent(event);
 }
 
-Object.keys(buttonMap).forEach((btn) => {
-  const el = document.querySelector(`[data-btn="${btn}"]`);
-  if (!el) return;
+let currentlyPressedBtns = new Set();
+let newlyPressedBtns = new Set();
+let buttonRects = new Map();
+let buttonElements = new Map();
 
-  const codes = buttonMap[btn];
+function updateButtonRects() {
+  buttonRects.clear();
+  buttonElements.clear();
+  const buttons = document.querySelectorAll("[data-btn]");
+  buttons.forEach(btn => {
+    const rect = btn.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      buttonRects.set(btn.dataset.btn, rect);
+      buttonElements.set(btn.dataset.btn, btn);
+    }
+  });
+}
 
-  el.addEventListener("touchstart", (e) => {
+function handleTouches(e) {
+  if (e.cancelable) {
     e.preventDefault();
-    el.classList.add("pressed");
-    codes.forEach((code) => dispatchKeyEvent(code, "keydown"));
-  });
+  }
+  
+  newlyPressedBtns.clear();
 
-  el.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    el.classList.remove("pressed");
-    codes.forEach((code) => dispatchKeyEvent(code, "keyup"));
-  });
+  for (let i = 0; i < e.touches.length; i++) {
+    const touch = e.touches[i];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    
+    for (const [btnName, rect] of buttonRects.entries()) {
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        newlyPressedBtns.add(btnName);
+      }
+    }
+  }
 
-  el.addEventListener("touchcancel", (e) => {
-    el.classList.remove("pressed");
-    codes.forEach((code) => dispatchKeyEvent(code, "keyup"));
-  });
-});
+  // Release buttons that are no longer pressed
+  for (const btn of currentlyPressedBtns) {
+    if (!newlyPressedBtns.has(btn)) {
+      const el = buttonElements.get(btn);
+      if (el) el.classList.remove("pressed");
+      const codes = buttonMap[btn];
+      if (codes) {
+        for (let i = 0; i < codes.length; i++) {
+          dispatchKeyEvent(codes[i], "keyup");
+        }
+      }
+    }
+  }
+
+  // Press buttons that are newly pressed
+  for (const btn of newlyPressedBtns) {
+    if (!currentlyPressedBtns.has(btn)) {
+      const el = buttonElements.get(btn);
+      if (el) el.classList.add("pressed");
+      const codes = buttonMap[btn];
+      if (codes) {
+        for (let i = 0; i < codes.length; i++) {
+          dispatchKeyEvent(codes[i], "keydown");
+        }
+      }
+    }
+  }
+
+  const temp = currentlyPressedBtns;
+  currentlyPressedBtns = newlyPressedBtns;
+  newlyPressedBtns = temp;
+}
+
+if (touchControls) {
+  touchControls.addEventListener("touchstart", handleTouches, { passive: false });
+  touchControls.addEventListener("touchmove", handleTouches, { passive: false });
+  touchControls.addEventListener("touchend", handleTouches, { passive: false });
+  touchControls.addEventListener("touchcancel", handleTouches, { passive: false });
+}
 
 touchToggle.addEventListener("click", () => {
   touchEnabled = !touchEnabled;
@@ -507,6 +598,65 @@ touchToggle.addEventListener("click", () => {
   updateTouchVisibility();
 });
 
+function toggleFullscreen() {
+  const canvasHost = document.getElementById("canvas-host");
+  if (!canvasHost) return;
+
+  if (!document.fullscreenElement) {
+    if (canvasHost.requestFullscreen) {
+      canvasHost.requestFullscreen();
+    } else if (canvasHost.webkitRequestFullscreen) { /* Safari */
+      canvasHost.webkitRequestFullscreen();
+    } else if (canvasHost.msRequestFullscreen) { /* IE11 */
+      canvasHost.msRequestFullscreen();
+    }
+    fullscreenBtn.textContent = "exit fullscreen";
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) { /* Safari */
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { /* IE11 */
+      document.msExitFullscreen();
+    }
+    fullscreenBtn.textContent = "fullscreen";
+  }
+}
+
+if (fullscreenBtn) {
+  fullscreenBtn.addEventListener("click", () => {
+    toggleFullscreen();
+    fullscreenBtn.blur();
+  });
+  
+  if (fullscreenExitBtn) {
+    fullscreenExitBtn.addEventListener("click", () => {
+      if (document.fullscreenElement) {
+        toggleFullscreen();
+      }
+    });
+  }
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) {
+      fullscreenBtn.textContent = "fullscreen";
+    } else {
+      fullscreenBtn.textContent = "exit fullscreen";
+    }
+  });
+  
+  document.addEventListener("webkitfullscreenchange", () => {
+    if (!document.webkitFullscreenElement) {
+      fullscreenBtn.textContent = "fullscreen";
+    } else {
+      fullscreenBtn.textContent = "exit fullscreen";
+    }
+  });
+}
+
 updateTouchVisibility();
-window.addEventListener("resize", updateTouchVisibility);
+window.addEventListener("resize", () => {
+  updateTouchVisibility();
+  requestAnimationFrame(updateButtonRects);
+});
 // ------------------------------------

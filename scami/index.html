@@ -8,6 +8,7 @@
       content="S.C.A.M. is a NES (Nintendo Entertainment System) emulator written in rust."
     />
     <title>S.C.A.M.</title>
+    <link rel="icon" type="image/png" href="/assets/favicon.png" />
     <link data-trunk rel="rust" data-wasm-opt="0" />
     <link data-trunk rel="copy-file" href="src/nestest.nes" />
     <link data-trunk rel="copy-file" href="src/AccuracyCoin.nes" />
@@ -25,7 +26,7 @@
           <h class="text-xl tracking-wider text-bright_yellow"> S.C.A.M. </h>
         </div>
 
-        <div class="flex flex-col text-xs justify-center">
+        <div class="hidden sm:flex flex-col text-xs justify-center">
           <div
             class="flex flex-row items-center justify-between gap-2 pb-2 border-b border-dark3"
           >
@@ -61,48 +62,80 @@
       ></div>
     </div>
 
-    <div class="w-full mx-auto flex max-w-4xl justify-end gap-2">
-      <button
-        id="touch-toggle"
-        class="my-2 border border-dark3 bg-dark2 px-2 py-1 text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow hidden"
-        type="button"
-      >
-        hide controls
-      </button>
-      <button
-        id="reset-btn"
-        class="my-2 border border-light3 bg-dark2 px-2 py-1 text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
-        type="button"
-        disabled
-        onclick="
-          resetGame();
-          this.blur();
-        "
-      >
-        reset
-      </button>
-      <button
-        id="load-btn"
-        class="my-2 border border-bright_yellow bg-dark2 px-2 py-1 text-xs text-bright_yellow hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow"
-        type="button"
-        onclick="
-          showLauncher();
-          this.blur();
-        "
-      >
-        change ROM
-      </button>
-    </div>
-
     <main
       class="min-h-0 flex-1 overflow-hidden bg-dark0_hard px-2 pb-3 sm:px-4"
     >
-      <div class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-3">
+      <div
+        id="main-layout"
+        class="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-3"
+      >
+        <div
+          id="top-toolbar"
+          class="w-full grid grid-cols-2 sm:flex sm:flex-row justify-between pointer-events-none gap-2 sm:gap-2 py-1 sm:py-2"
+        >
+          <div
+            id="toolbar-left"
+            class="flex flex-col sm:flex-row justify-start gap-2 pointer-events-auto w-full sm:w-auto"
+          >
+            <button
+              id="touch-toggle"
+              class="flex-1 sm:flex-none border border-light3 bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow hidden"
+              type="button"
+            >
+              hide controls
+            </button>
+            <button
+              id="fullscreen-btn"
+              class="flex-1 sm:flex-none border border-light3 bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow"
+              type="button"
+            >
+              fullscreen
+            </button>
+          </div>
+          <div
+            id="toolbar-right"
+            class="flex flex-col sm:flex-row justify-start sm:justify-end gap-2 pointer-events-auto sm:ml-auto w-full sm:w-auto"
+          >
+            <button
+              id="reset-btn"
+              class="flex-1 sm:flex-none border border-light3 bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+              type="button"
+              disabled
+              onclick="
+                resetGame();
+                this.blur();
+              "
+            >
+              reset
+            </button>
+            <button
+              id="load-btn"
+              class="flex-1 sm:flex-none border border-bright_yellow bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-bright_yellow hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow"
+              type="button"
+              onclick="
+                showLauncher();
+                this.blur();
+              "
+            >
+              change ROM
+            </button>
+          </div>
+        </div>
+
         <section
           id="canvas-host"
           class="relative flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden border-dark1 bg-dark0_hard"
           aria-label="Emulator screen"
         >
+          <button
+            id="fullscreen-exit-btn"
+            class="absolute left-4 top-4 z-50 text-4xl leading-none text-light4 hover:text-light1 focus:outline-none focus:text-bright_yellow pointer-events-auto drop-shadow-md"
+            type="button"
+            title="Exit Fullscreen"
+            aria-label="Exit Fullscreen"
+          >
+            ×
+          </button>
           <div
             id="launcher"
             class="absolute inset-0 z-10 flex items-center justify-center overflow-y-auto bg-dark0_hard"
@@ -161,9 +194,6 @@
                     >
                       Open a .nes file...
                     </button>
-                    <p class="mt-2 text-[0.65rem] text-light4">
-                      or drag and drop one anywhere
-                    </p>
                   </section>
 
                   <section>
@@ -237,6 +267,77 @@
               </div>
             </div>
           </div>
+          <!-- Touch Controls Overlay -->
+          <div
+            id="touch-controls"
+            class="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-1 landscape:px-12 opacity-0 transition-opacity duration-200 touch-none [&.visible]:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:hidden"
+          >
+            <div
+              class="flex w-full flex-wrap items-end justify-between landscape:flex-nowrap"
+            >
+              <!-- D-Pad -->
+              <div class="relative h-36 w-36 shrink-0">
+                <button
+                  data-btn="up"
+                  class="pointer-events-auto absolute left-1/2 top-0 h-12 w-12 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-base opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  ▲
+                </button>
+                <button
+                  data-btn="down"
+                  class="pointer-events-auto absolute bottom-0 left-1/2 h-12 w-12 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-base opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  ▼
+                </button>
+                <button
+                  data-btn="left"
+                  class="pointer-events-auto absolute left-0 top-1/2 h-12 w-12 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-base opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  ◀
+                </button>
+                <button
+                  data-btn="right"
+                  class="pointer-events-auto absolute right-0 top-1/2 h-12 w-12 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-base opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  ▶
+                </button>
+              </div>
+
+              <!-- Center buttons -->
+              <div
+                class="order-last flex w-full flex-1 items-end justify-center gap-8 px-0 pb-2 pt-4 landscape:order-none landscape:justify-between landscape:px-8 landscape:pb-4 landscape:pt-0"
+              >
+                <button
+                  data-btn="select"
+                  class="pointer-events-auto text-[0.7rem] flex items-center justify-center w-24 h-8 border border-dark3 rounded bg-dark0_hard text-light4 opacity-80 select-none active:bg-dark1 [&.pressed]:bg-dark1"
+                >
+                  SELECT
+                </button>
+                <button
+                  data-btn="start"
+                  class="pointer-events-auto text-[0.7rem] flex items-center justify-center w-24 h-8 border border-dark3 rounded bg-dark0_hard text-light4 opacity-80 select-none active:bg-dark1 [&.pressed]:bg-dark1"
+                >
+                  START
+                </button>
+              </div>
+
+              <!-- A/B buttons -->
+              <div class="relative h-32 w-32 shrink-0">
+                <button
+                  data-btn="b"
+                  class="pointer-events-auto absolute bottom-4 left-0 h-14 w-14 text-lg flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  B
+                </button>
+                <button
+                  data-btn="a"
+                  class="pointer-events-auto absolute right-0 top-4 h-14 w-14 text-lg flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 opacity-80 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
+                >
+                  A
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section
@@ -276,74 +377,6 @@
       role="status"
       aria-live="polite"
     ></div>
-
-    <!-- Touch Controls Overlay -->
-    <div
-      id="touch-controls"
-      class="pointer-events-none fixed inset-x-0 bottom-0 z-40 p-4 opacity-0 transition-opacity duration-200 touch-none [&.visible]:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:hidden"
-    >
-      <div class="pointer-events-auto flex w-full justify-between">
-        <!-- D-Pad -->
-        <div class="relative h-32 w-32">
-          <button
-            data-btn="up"
-            class="absolute left-1/2 top-0 h-10 w-10 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            ▲
-          </button>
-          <button
-            data-btn="down"
-            class="absolute bottom-0 left-1/2 h-10 w-10 -translate-x-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            ▼
-          </button>
-          <button
-            data-btn="left"
-            class="absolute left-0 top-1/2 h-10 w-10 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            ◀
-          </button>
-          <button
-            data-btn="right"
-            class="absolute right-0 top-1/2 h-10 w-10 -translate-y-1/2 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            ▶
-          </button>
-        </div>
-
-        <!-- Center buttons -->
-        <div class="flex items-end justify-center gap-3 pb-4">
-          <button
-            data-btn="select"
-            class="text-[0.6rem] flex items-center justify-center w-12 h-6 border border-dark3 rounded bg-dark0_hard text-light4 opacity-50 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark1 [&.pressed]:bg-dark1"
-          >
-            SEL
-          </button>
-          <button
-            data-btn="start"
-            class="text-[0.6rem] flex items-center justify-center w-12 h-6 border border-dark3 rounded bg-dark0_hard text-light4 opacity-50 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark1 [&.pressed]:bg-dark1"
-          >
-            START
-          </button>
-        </div>
-
-        <!-- A/B buttons -->
-        <div class="relative h-32 w-32">
-          <button
-            data-btn="b"
-            class="absolute bottom-4 left-0 h-12 w-12 flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 text-sm opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            B
-          </button>
-          <button
-            data-btn="a"
-            class="absolute right-0 top-4 h-14 w-14 text-lg flex items-center justify-center border-2 border-light4 rounded-md bg-dark0_hard text-light1 opacity-50 transition-opacity duration-100 select-none active:opacity-90 [&.pressed]:opacity-90 active:bg-dark2 [&.pressed]:bg-dark2"
-          >
-            A
-          </button>
-        </div>
-      </div>
-    </div>
 
     <div
       id="rom-drop-overlay"
