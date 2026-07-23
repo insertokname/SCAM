@@ -72,6 +72,10 @@ impl Apu {
 
     pub fn connect_cpu(&mut self, _cpu: Rc<RefCell<Cpu>>) {}
 
+    pub fn queue_len(&self) -> usize {
+        self.sample_queue.len()
+    }
+
     pub fn read_register(&mut self, address: u16, peek: bool) -> u8 {
         if address != 0x4015 {
             return 0xFF;

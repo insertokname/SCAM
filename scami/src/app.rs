@@ -33,7 +33,7 @@ const MAX_CATCHUP_TICKS: u64 = MASTER_CLOCK as u64 / 30; // ≈ 2 frames at 60 H
 
 pub(crate) struct AudioState {
     _handle: rodio::MixerDeviceSink,
-    _player: rodio::Player,
+    pub(crate) player: rodio::Player,
 }
 
 #[derive(Default, Clone)]
@@ -46,11 +46,18 @@ impl Iterator for ApuSource {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let val = self
-            .apu
-            .as_ref()
-            .and_then(|a| a.lock().unwrap().next())
-            .unwrap_or(self.last_val);
+        let val = if let Some(apu) = &self.apu {
+            let mut apu_lock = apu.lock().unwrap();
+            match apu_lock.next() {
+                Some(v) => v,
+                None => {
+                    // Decay the signal smoothly to 0.0 to prevent popping when underflowed
+                    self.last_val * 0.95
+                }
+            }
+        } else {
+            self.last_val * 0.95
+        };
         self.last_val = val;
         Some(val)
     }
@@ -231,7 +238,7 @@ impl App {
         player.append(self.apu_source.clone());
         self.audio = Some(AudioState {
             _handle: handle,
-            _player: player,
+            player,
         });
     }
 
@@ -252,7 +259,25 @@ impl App {
         let elapsed_nanos = WebInstant::now()
             .saturating_duration_since(self.emulation_anchor)
             .as_nanos();
-        let target_ticks = (elapsed_nanos * MASTER_CLOCK as u128 / NANOS_PER_SECOND) as u64;
+
+        // Default target ticks
+        let mut target_ticks = (elapsed_nanos * MASTER_CLOCK as u128 / NANOS_PER_SECOND) as u64;
+
+        // Dynamic Resampling:
+        // Adjust the target ticks slightly based on how full the audio queue is.
+        // We want to keep the queue around 1024 - 2048 samples.
+        let q_len = self.nes.borrow().apu.lock().unwrap().queue_len();
+        if q_len < 1024 {
+            // Buffer running low! Emulate slightly faster to catch up audio
+            // (add up to 10% more ticks)
+            target_ticks += (target_ticks - self.completed_ticks) / 10;
+        } else if q_len > 3000 {
+            // Buffer is filling up! Emulate slightly slower
+            // (run 10% fewer ticks)
+            let mut diff = target_ticks.saturating_sub(self.completed_ticks);
+            diff -= diff / 10;
+            target_ticks = self.completed_ticks + diff;
+        }
 
         // Drop a large scheduling gap completely. Merely clamping this call to
         // `completed_ticks + MAX_CATCHUP_TICKS` leaves the rest of the debt in

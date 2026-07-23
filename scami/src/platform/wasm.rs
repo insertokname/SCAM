@@ -118,7 +118,14 @@ pub(crate) fn poll_runtime_state(app: &mut App) -> bool {
     }
 
     if PAUSED.with(|f| f.get()) {
+        if let Some(audio) = &app.audio {
+            audio.player.pause();
+        }
         return false;
+    } else {
+        if let Some(audio) = &app.audio {
+            audio.player.play();
+        }
     }
 
     if let Some(rom_bytes) = PENDING_ROM.with(|p| p.borrow_mut().take()) {
