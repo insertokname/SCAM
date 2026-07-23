@@ -367,9 +367,53 @@ document.addEventListener("drop", async (event) => {
 document.addEventListener("dragend", resetFileDrag);
 
 const WASM_PANIC_MESSAGE = "scam-wasm-message";
+const WASM_CRASH_COUNT = "scam-crash-count";
+const WASM_CRASH_TIME = "scam-crash-time";
+
+function formatPanicMessage(info) {
+  if (!info) return "Unknown crash";
+  const lines = info
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  if (lines.length > 1 && lines[0].startsWith("panicked at ")) {
+    const message = lines.slice(1).join(" ");
+    return message.substring(0, 150) + (message.length > 150 ? "..." : "");
+  }
+
+  const joined = lines.join(" ");
+  return joined.substring(0, 150) + (joined.length > 150 ? "..." : "");
+}
 
 window.recordRustPanic = (info) => {
-  sessionStorage.setItem(WASM_PANIC_MESSAGE, info);
+  const now = Date.now();
+  const lastCrash = parseInt(
+    sessionStorage.getItem(WASM_CRASH_TIME) || "0",
+    10,
+  );
+  let crashCount = parseInt(
+    sessionStorage.getItem(WASM_CRASH_COUNT) || "0",
+    10,
+  );
+
+  if (now - lastCrash < 10000) {
+    crashCount++;
+  } else {
+    crashCount = 1;
+  }
+
+  const shortInfo = formatPanicMessage(info);
+
+  sessionStorage.setItem(WASM_CRASH_TIME, now.toString());
+  sessionStorage.setItem(WASM_CRASH_COUNT, crashCount.toString());
+  sessionStorage.setItem(WASM_PANIC_MESSAGE, shortInfo);
+
+  if (crashCount >= 3) {
+    showToast(`Repeated crashes detected. Halting emulator.\n${shortInfo}`);
+    return;
+  }
+
   location.reload();
 };
 
