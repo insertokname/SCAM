@@ -567,8 +567,13 @@ function handleTouches(e) {
   }
 
   // Press buttons that are newly pressed
+  let vibrated = false;
   for (const btn of newlyPressedBtns) {
     if (!currentlyPressedBtns.has(btn)) {
+      if (!vibrated && navigator.vibrate) {
+        navigator.vibrate(10);
+        vibrated = true;
+      }
       const el = buttonElements.get(btn);
       if (el) el.classList.add("pressed");
       const codes = buttonMap[btn];
