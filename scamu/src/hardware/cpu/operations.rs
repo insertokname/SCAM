@@ -94,6 +94,7 @@ pub(super) const ASL: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result & 0xFF == 0);
     cpu.status.set_flag_enabled(NEGATIVE, result & 0x80 > 0);
 
+    addressing_mode.write(argument as u8, cpu, bus);
     addressing_mode.write(result as u8, cpu, bus);
 };
 
@@ -240,6 +241,7 @@ pub(super) const DCP: Operation<u8> = |cpu, bus, addressing_mode| {
     let argument: u8 = addressing_mode.read(cpu, bus);
     let result = argument.wrapping_sub(1);
 
+    addressing_mode.write(argument, cpu, bus);
     addressing_mode.write(result, cpu, bus);
     CMP(cpu, bus, addressing_mode);
 };
@@ -250,6 +252,7 @@ pub(super) const DEC: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result == 0);
     cpu.status.set_flag_enabled(NEGATIVE, result & 0x80 > 0);
 
+    addressing_mode.write(argument, cpu, bus);
     addressing_mode.write(result, cpu, bus);
 };
 
@@ -284,6 +287,7 @@ pub(super) const INC: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result == 0);
     cpu.status.set_flag_enabled(NEGATIVE, result & 0x80 > 0);
 
+    addressing_mode.write(argument, cpu, bus);
     addressing_mode.write(result, cpu, bus);
 };
 
@@ -378,6 +382,7 @@ pub(super) const LSR: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result == 0);
     cpu.status.set_flag_enabled(NEGATIVE, false);
 
+    addressing_mode.write(argument, cpu, bus);
     addressing_mode.write(result, cpu, bus);
 };
 
@@ -439,6 +444,7 @@ pub(super) const ROL: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result & 0xFF == 0);
     cpu.status.set_flag_enabled(NEGATIVE, result & 0x80 > 0);
 
+    addressing_mode.write(argument as u8, cpu, bus);
     addressing_mode.write(result as u8, cpu, bus);
 };
 
@@ -454,6 +460,7 @@ pub(super) const ROR: Operation<u8> = |cpu, bus, addressing_mode| {
     cpu.status.set_flag_enabled(ZERO, result & 0xFF == 0);
     cpu.status.set_flag_enabled(NEGATIVE, result & 0x80 > 0);
 
+    addressing_mode.write(argument, cpu, bus);
     addressing_mode.write(result, cpu, bus);
 };
 

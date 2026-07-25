@@ -60,7 +60,7 @@ pub mod cpu {
     }
 }
 
-pub mod cartrige {
+pub mod cartridge {
     pub const NES_MAGIC_NUMBERS: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
     pub const PRG_ROM_BANK_SIZE: usize = byte_size!(16 kb);
     pub const CHR_ROM_BANK_SIZE: usize = byte_size!(8 kb);

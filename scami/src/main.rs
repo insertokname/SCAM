@@ -4,7 +4,7 @@ mod platform;
 
 use app::App;
 #[cfg(not(target_arch = "wasm32"))]
-use scamu::hardware::cartrige::Cartrige;
+use scamm::cartridge::Cartridge;
 use winit::event_loop::EventLoop;
 
 #[cfg(target_arch = "wasm32")]
@@ -19,17 +19,17 @@ fn main() {
     let event_loop = EventLoop::new().unwrap();
     let mut app = App::new();
 
-    let cartrige = Cartrige::from_bytes(include_bytes!("./nestest.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./AccuracyCoin.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./gitignored_games/smb.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./gitignored_games/pacman.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./gitignored_games/dk.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./gitignored_games/ic.nes")).unwrap();
-    // let cartrige = Cartrige::from_bytes(include_bytes!("./gitignored_games/tetris-73.nes")).unwrap();
+    let cartridge = Cartridge::from_bytes(include_bytes!("./nestest.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./AccuracyCoin.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./gitignored_games/smb.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./gitignored_games/pacman.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./gitignored_games/dk.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./gitignored_games/ic.nes")).unwrap();
+    // let cartridge = Cartridge::from_bytes(include_bytes!("./gitignored_games/tetris-73.nes")).unwrap();
 
     {
         let mut nes = app.nes.borrow_mut();
-        nes.insert_cartrige(cartrige);
+        nes.insert_cartridge(cartridge);
         nes.reset();
     }
 

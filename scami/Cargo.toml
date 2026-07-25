@@ -8,6 +8,7 @@ pixels = "0.17.1"
 winit = "0.30.13"
 log = "0.4.29"
 scamu = { path = "../scamu" }
+scamm = { path = "../scamm" }
 web-time = "1.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

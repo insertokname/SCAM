@@ -476,22 +476,23 @@ function updateTouchVisibility() {
   if (isTouch && touchEnabled) {
     touchControls.classList.add("visible");
     keybinds.style.display = "none";
-    
+
     const touchHeight = touchControls.getBoundingClientRect().height;
-    
-    // In portrait mode, we can pad the entire main element because width is the limiting 
+
+    // In portrait mode, we can pad the entire main element because width is the limiting
     // factor for the game canvas, so padding simply pushes the game and menus up.
-    // In landscape mode, height is the limiting factor. Shrinking main makes the game 
+    // In landscape mode, height is the limiting factor. Shrinking main makes the game
     // tiny! Instead, we only pad the launcher menu so it remains scrollable, allowing
     // the game canvas to use the full screen height (controls naturally sit on the sides).
     if (window.innerHeight > window.innerWidth) {
-      if (mainElement) mainElement.style.paddingBottom = `${touchHeight + 12}px`;
+      if (mainElement)
+        mainElement.style.paddingBottom = `${touchHeight + 12}px`;
       if (launcher) launcher.style.paddingBottom = "";
     } else {
       if (mainElement) mainElement.style.paddingBottom = "";
       if (launcher) launcher.style.paddingBottom = `${touchHeight + 12}px`;
     }
-    
+
     // Defer updating rects until after the layout changes have been fully applied
     requestAnimationFrame(updateButtonRects);
   } else {
@@ -524,7 +525,7 @@ function updateButtonRects() {
   buttonRects.clear();
   buttonElements.clear();
   const buttons = document.querySelectorAll("[data-btn]");
-  buttons.forEach(btn => {
+  buttons.forEach((btn) => {
     const rect = btn.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) {
       buttonRects.set(btn.dataset.btn, rect);
@@ -537,16 +538,21 @@ function handleTouches(e) {
   if (e.cancelable) {
     e.preventDefault();
   }
-  
+
   newlyPressedBtns.clear();
 
   for (let i = 0; i < e.touches.length; i++) {
     const touch = e.touches[i];
     const x = touch.clientX;
     const y = touch.clientY;
-    
+
     for (const [btnName, rect] of buttonRects.entries()) {
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      if (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+      ) {
         newlyPressedBtns.add(btnName);
       }
     }
@@ -591,10 +597,16 @@ function handleTouches(e) {
 }
 
 if (touchControls) {
-  touchControls.addEventListener("touchstart", handleTouches, { passive: false });
-  touchControls.addEventListener("touchmove", handleTouches, { passive: false });
+  touchControls.addEventListener("touchstart", handleTouches, {
+    passive: false,
+  });
+  touchControls.addEventListener("touchmove", handleTouches, {
+    passive: false,
+  });
   touchControls.addEventListener("touchend", handleTouches, { passive: false });
-  touchControls.addEventListener("touchcancel", handleTouches, { passive: false });
+  touchControls.addEventListener("touchcancel", handleTouches, {
+    passive: false,
+  });
 }
 
 touchToggle.addEventListener("click", () => {
@@ -610,18 +622,22 @@ function toggleFullscreen() {
   if (!document.fullscreenElement) {
     if (canvasHost.requestFullscreen) {
       canvasHost.requestFullscreen();
-    } else if (canvasHost.webkitRequestFullscreen) { /* Safari */
+    } else if (canvasHost.webkitRequestFullscreen) {
+      /* Safari */
       canvasHost.webkitRequestFullscreen();
-    } else if (canvasHost.msRequestFullscreen) { /* IE11 */
+    } else if (canvasHost.msRequestFullscreen) {
+      /* IE11 */
       canvasHost.msRequestFullscreen();
     }
     fullscreenBtn.textContent = "exit fullscreen";
   } else {
     if (document.exitFullscreen) {
       document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) { /* Safari */
+    } else if (document.webkitExitFullscreen) {
+      /* Safari */
       document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { /* IE11 */
+    } else if (document.msExitFullscreen) {
+      /* IE11 */
       document.msExitFullscreen();
     }
     fullscreenBtn.textContent = "fullscreen";
@@ -633,7 +649,7 @@ if (fullscreenBtn) {
     toggleFullscreen();
     fullscreenBtn.blur();
   });
-  
+
   if (fullscreenExitBtn) {
     fullscreenExitBtn.addEventListener("click", () => {
       if (document.fullscreenElement) {
@@ -649,7 +665,7 @@ if (fullscreenBtn) {
       fullscreenBtn.textContent = "exit fullscreen";
     }
   });
-  
+
   document.addEventListener("webkitfullscreenchange", () => {
     if (!document.webkitFullscreenElement) {
       fullscreenBtn.textContent = "fullscreen";
@@ -664,4 +680,16 @@ window.addEventListener("resize", () => {
   updateTouchVisibility();
   requestAnimationFrame(updateButtonRects);
 });
-// ------------------------------------
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-rom-url]").forEach((btn) => {
+    if (btn.dataset.romUrl.startsWith("http")) {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.as = "fetch";
+      link.crossOrigin = "anonymous";
+      link.href = btn.dataset.romUrl;
+      document.head.appendChild(link);
+    }
+  });
+});

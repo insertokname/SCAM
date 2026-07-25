@@ -1,21 +1,17 @@
+use scamm::cartridge::{Cartridge, cartridge_access::CartridgeAccess};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
     sync::{Arc, Mutex},
 };
 
-use crate::hardware::{
-    apu::Apu,
-    bit_ops::BitOps,
-    cartrige::{Cartrige, cartrige_access::CartrigeAccess},
-    ppu::Ppu,
-};
+use crate::hardware::{apu::Apu, bit_ops::BitOps, ppu::Ppu};
 
 use super::constants;
 
 pub struct CpuBus {
     cpu_ram: [u8; constants::cpu::RAM_SIZE],
-    cartrige: Option<Rc<RefCell<Cartrige>>>,
+    cartridge: Option<Rc<RefCell<Cartridge>>>,
     apu: Option<Arc<Mutex<Apu>>>,
     ppu: Option<Rc<RefCell<Ppu>>>,
     open_bus: Cell<u8>,
@@ -28,7 +24,7 @@ impl CpuBus {
     pub fn new() -> Self {
         Self {
             cpu_ram: [0; constants::cpu::RAM_SIZE],
-            cartrige: None,
+            cartridge: None,
             apu: None,
             ppu: None,
             open_bus: Cell::new(0),
@@ -38,8 +34,8 @@ impl CpuBus {
         }
     }
 
-    pub fn insert_cartrige(&mut self, cartrige: Rc<RefCell<Cartrige>>) {
-        self.cartrige = Some(cartrige);
+    pub fn insert_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
+        self.cartridge = Some(cartridge);
     }
 
     pub fn connect_ppu(&mut self, ppu: Rc<RefCell<Ppu>>) {
@@ -75,14 +71,26 @@ impl CpuBus {
                 .map(|a| a.lock().unwrap().read_register(address, peek))
                 .unwrap_or(self.open_bus.get()),
             0x4020.. => self
-                .cartrige
+                .cartridge
                 .as_ref()
                 .map(|c| {
-                    c.borrow_mut()
-                        .read(CartrigeAccess::CpuAccess { address })
-                        .unwrap_or_else(|| self.open_bus.get())
+                    if peek {
+                        c.borrow()
+                            .peek_with_open_bus(
+                                CartridgeAccess::CpuAccess { address },
+                                self.open_bus.get(),
+                            )
+                            .unwrap_or_else(|| self.open_bus.get())
+                    } else {
+                        c.borrow_mut()
+                            .read_with_open_bus(
+                                CartridgeAccess::CpuAccess { address },
+                                self.open_bus.get(),
+                            )
+                            .unwrap_or_else(|| self.open_bus.get())
+                    }
                 })
-                .unwrap_or(0x0),
+                .unwrap_or_else(|| self.open_bus.get()),
         };
 
         if !peek {
@@ -92,6 +100,7 @@ impl CpuBus {
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
+        self.open_bus.set(value);
         match address {
             0x0..0x2000 => self.cpu_ram[address as usize & (constants::cpu::RAM_SIZE - 1)] = value,
             0x2000..0x4000 | 0x4014 => self
@@ -116,11 +125,11 @@ impl CpuBus {
                 .map(|a| a.lock().unwrap().write_register(address, value))
                 .unwrap_or(()),
             0x4020.. => self
-                .cartrige
+                .cartridge
                 .as_ref()
                 .map(|c| {
                     c.borrow_mut()
-                        .write(CartrigeAccess::CpuAccess { address }, value)
+                        .write(CartridgeAccess::CpuAccess { address }, value)
                 })
                 .unwrap_or(()),
         }
@@ -179,5 +188,17 @@ impl CpuBus {
         }
 
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cpu_writes_refresh_open_bus_even_without_a_target_device() {
+        let mut bus = CpuBus::new();
+        bus.write(0x4018, 0xa5);
+        assert_eq!(bus.read(0x4020), 0xa5);
     }
 }

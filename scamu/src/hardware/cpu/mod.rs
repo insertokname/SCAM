@@ -135,6 +135,11 @@ impl Cpu {
             self.is_resetting = false;
         }
 
+        if self.cycles_left > 0 {
+            self.cycles_left -= 1;
+            return;
+        }
+
         if self.is_triggered_nmi
             || (self.is_triggered_irq && !self.status.get_flag_enabled(INTERRUPT_DISABLE))
         {
@@ -150,10 +155,8 @@ impl Cpu {
 
             self.is_triggered_nmi = false;
             self.is_triggered_irq = false;
-        }
-
-        if self.cycles_left > 0 {
-            self.cycles_left -= 1;
+            self.cycles_left = 6;
+            self.total_cycles += 7;
         } else {
             #[cfg(feature = "cpu_logger")]
             let instruction_location = self.program_counter;

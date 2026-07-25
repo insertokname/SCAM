@@ -1,8 +1,8 @@
 use crate::app::App;
 use crate::config::{INIT_HEIGHT, INIT_WIDTH, RUN_UNCAPPED};
 use pixels::{Pixels, SurfaceTexture};
+use scamm::cartridge::Cartridge;
 use scamu::devices::nes::Nes;
-use scamu::hardware::cartrige::Cartrige;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -47,7 +47,7 @@ pub fn reset_timestamp() {
 
 #[wasm_bindgen]
 pub fn load_rom(bytes: &[u8]) -> Result<(), JsValue> {
-    Cartrige::from_bytes(bytes)
+    Cartridge::from_bytes(bytes)
         .map_err(|err| JsValue::from_str(&format!("rom load failed: {err:?}")))?;
 
     PENDING_ROM.with(|p| *p.borrow_mut() = Some(bytes.to_vec()));
@@ -129,13 +129,13 @@ pub(crate) fn poll_runtime_state(app: &mut App) -> bool {
     }
 
     if let Some(rom_bytes) = PENDING_ROM.with(|p| p.borrow_mut().take()) {
-        let cartrige = Cartrige::from_bytes(&rom_bytes)
+        let cartridge = Cartridge::from_bytes(&rom_bytes)
             .expect("rom validation passed in load_rom but failed here");
 
         let new_nes = Rc::new(RefCell::new(Nes::new()));
         {
             let mut nes = new_nes.borrow_mut();
-            nes.insert_cartrige(cartrige);
+            nes.insert_cartridge(cartridge);
             nes.reset();
         }
 

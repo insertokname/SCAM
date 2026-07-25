@@ -59,6 +59,7 @@ pub struct Apu {
     new_mode_flag: bool,
     new_mode_flag_cycle: usize,
     sampled_sound_total: f32,
+    expansion_audio_sample: f32,
     collected_samples: u32,
     sample_timer: f32,
     #[default(VecDeque::with_capacity(SAMPLE_QUEUE_SIZE))]
@@ -74,6 +75,14 @@ impl Apu {
 
     pub fn queue_len(&self) -> usize {
         self.sample_queue.len()
+    }
+
+    pub fn irq_pending(&self) -> bool {
+        self.frame_interrupt_flag
+    }
+
+    pub fn set_expansion_audio_sample(&mut self, sample: f32) {
+        self.expansion_audio_sample = sample;
     }
 
     pub fn read_register(&mut self, address: u16, peek: bool) -> u8 {
@@ -155,7 +164,7 @@ impl Apu {
                     + 100.0)
         };
 
-        pulse_out + tnd_out
+        pulse_out + tnd_out + self.expansion_audio_sample
     }
 
     pub fn tick(&mut self) {

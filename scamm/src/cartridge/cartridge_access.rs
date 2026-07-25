@@ -1,5 +1,5 @@
 #[derive(Clone)]
-pub enum CartrigeAccess {
+pub enum CartridgeAccess {
     CpuAccess { address: u16 },
     PpuAccess { address: u16 },
 }

@@ -164,15 +164,29 @@
               <div class="grid gap-6 pt-5 sm:grid-cols-[1fr_1.3fr]">
                 <aside class="text-xs text-light1">
                   <p class="mb-2">TODO:</p>
-                  <ul class="list-disc space-y-1 pl-4 text-xs">
+                  <ul class="list-disc space-y-1 pl-4 text-[0.70rem]">
                     <li>
                       <span class="strikethrough text-light4"> new ui </span>
                     </li>
-                    <li>fullscreen</li>
-                    <li>mobile support</li>
-                    <li>More mapper support</li>
-                    <li>APU accuracy work</li>
-                    <li>performance improvements</li>
+                    <li>
+                      <span class="strikethrough text-light4">fullscreen</span>
+                    </li>
+                    <li>
+                      <span class="strikethrough text-light4">
+                        mobile support
+                      </span>
+                    </li>
+                    <li>
+                      <span class="strikethrough text-light4">
+                        More mappers
+                      </span>
+                    </li>
+                    <li>better APU</li>
+                    <li>
+                      <span class="strikethrough text-light4">
+                        better performance
+                      </span>
+                    </li>
                     <li>save states?</li>
                     <li>kms</li>
                   </ul>
@@ -207,10 +221,12 @@
                         class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
                         type="button"
                         disabled
+                        data-rom-url="https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FDonkey%20Kong%20%28JU%29.nes"
+                        data-rom-name="Donkey Kong"
                         onclick="
                           loadPredefined(
-                            `https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FDonkey%20Kong%20%28JU%29.nes`,
-                            'Donkey Kong',
+                            this.dataset.romUrl,
+                            this.dataset.romName,
                           )
                         "
                       >
@@ -221,15 +237,47 @@
                         class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
                         type="button"
                         disabled
+                        data-rom-url="https://archive.org/download/NESMegaPack201808/ROMS.zip/USA%2FTetris%20%28U%29%20%5B%21%5D.nes"
+                        data-rom-name="Tetris"
                         onclick="
                           loadPredefined(
-                            `https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FSuper%20Mario%20Bros%20%28JU%29%20%28PRG%200%29.nes`,
-                            'Super Mario Bros',
+                            this.dataset.romUrl,
+                            this.dataset.romName,
+                          )
+                        "
+                      >
+                        <span>Tetris</span><span class="text-light4">ROM</span>
+                      </button>
+                      <button
+                        class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+                        type="button"
+                        disabled
+                        data-rom-url="https://archive.org/download/NESMegaPack201808/ROMS.zip/World%2FSuper%20Mario%20Bros%20%28JU%29%20%28PRG%200%29.nes"
+                        data-rom-name="Super Mario Bros"
+                        onclick="
+                          loadPredefined(
+                            this.dataset.romUrl,
+                            this.dataset.romName,
                           )
                         "
                       >
                         <span>Super Mario Bros.</span
                         ><span class="text-light4">ROM</span>
+                      </button>
+                      <button
+                        class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+                        type="button"
+                        disabled
+                        data-rom-url="https://archive.org/download/NESMegaPack201808/ROMS.zip/USA%2FLegend%20of%20Zelda%2C%20The%20%28U%29%20%28PRG%200%29.nes"
+                        data-rom-name="The legend of Zelda"
+                        onclick="
+                          loadPredefined(
+                            this.dataset.romUrl,
+                            this.dataset.romName,
+                          )
+                        "
+                      >
+                        <span>The legend of Zelda</span><span class="text-light4">ROM</span>
                       </button>
                     </div>
                   </section>
@@ -245,7 +293,14 @@
                         class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
                         type="button"
                         disabled
-                        onclick="loadPredefined('nestest.nes', 'nestest')"
+                        data-rom-url="nestest.nes"
+                        data-rom-name="nestest"
+                        onclick="
+                          loadPredefined(
+                            this.dataset.romUrl,
+                            this.dataset.romName,
+                          )
+                        "
                       >
                         <span>nestest</span
                         ><span class="text-light4">TEST</span>
@@ -254,8 +309,13 @@
                         class="launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 hover:border-light4 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
                         type="button"
                         disabled
+                        data-rom-url="AccuracyCoin.nes"
+                        data-rom-name="AccuracyCoin"
                         onclick="
-                          loadPredefined('AccuracyCoin.nes', 'AccuracyCoin')
+                          loadPredefined(
+                            this.dataset.romUrl,
+                            this.dataset.romName,
+                          )
                         "
                       >
                         <span>AccuracyCoin</span
@@ -305,7 +365,7 @@
 
               <!-- Center buttons -->
               <div
-                class="order-last flex w-full flex-1 items-end justify-center gap-8 px-0 pb-2 pt-4 landscape:order-none landscape:justify-between landscape:px-8 landscape:pb-4 landscape:pt-0"
+                class="order-last flex w-full flex-1 items-end justify-center gap-8 px-0 pb-2 pt-4 landscape:order-0 landscape:justify-between landscape:px-8 landscape:pb-4 landscape:pt-0"
               >
                 <button
                   data-btn="select"

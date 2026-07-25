@@ -1,10 +1,11 @@
 #![cfg(test)]
 
+use scamm::cartridge::Cartridge;
 mod test_logger;
 
 use std::env;
 
-use crate::{devices::nes::Nes, hardware::cartrige::Cartrige, test::test_logger::TestLogger};
+use crate::{devices::nes::Nes, test::test_logger::TestLogger};
 
 static NESTEST_TEST_LOGGER: TestLogger = TestLogger::new();
 
@@ -15,9 +16,9 @@ fn nestest() {
 
     let mut nes = Nes::new();
     // Thank you nes dev wiki https://www.nesdev.org/wiki/Emulator_tests
-    let cartrige = Cartrige::from_bytes(include_bytes!("./nestest/nestest.nes")).unwrap();
+    let cartridge = Cartridge::from_bytes(include_bytes!("./nestest/nestest.nes")).unwrap();
 
-    nes.insert_cartrige(cartrige);
+    nes.insert_cartridge(cartridge);
     nes.reset_with_program_counter(0xC000);
 
     loop {

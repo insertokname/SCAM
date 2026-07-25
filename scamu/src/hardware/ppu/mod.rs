@@ -1,8 +1,8 @@
+use scamm::cartridge::{Cartridge, cartridge_access::CartridgeAccess};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::hardware::{
     bit_ops::BitOps,
-    cartrige::{Cartrige, cartrige_access::CartrigeAccess},
     constants::{
         self,
         ppu::{
@@ -17,6 +17,7 @@ use crate::hardware::{
     cpu::{Cpu, DmaState},
     ppu::pallet_memory::PalletMemory,
 };
+use scamm::{PpuFetch, PpuFetchKind};
 
 pub mod pallet_memory;
 
@@ -81,9 +82,10 @@ pub enum SpriteEvaluation {
 
 pub struct Ppu {
     cpu: Option<Rc<RefCell<Cpu>>>,
-    cartrige: Option<Rc<RefCell<Cartrige>>>,
+    cartridge: Option<Rc<RefCell<Cartridge>>>,
     scanline: u32,
     dot: u32,
+    total_cycles: u64,
     pub pallet_memory: PalletMemory,
     nametable_memory: [u8; NAMETABLE_SIZE * 4],
     open_bus: u8,
@@ -126,9 +128,10 @@ impl Ppu {
     pub fn new() -> Self {
         Self {
             cpu: None,
-            cartrige: None,
+            cartridge: None,
             scanline: 0,
             dot: 0,
+            total_cycles: 0,
             pallet_memory: PalletMemory::default(),
             nametable_memory: [0; NAMETABLE_SIZE * 4],
             open_bus: 0,
@@ -167,8 +170,8 @@ impl Ppu {
         }
     }
 
-    pub fn insert_cartrige(&mut self, cartrige: Rc<RefCell<Cartrige>>) {
-        self.cartrige = Some(cartrige);
+    pub fn insert_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
+        self.cartridge = Some(cartridge);
     }
 
     pub fn connect_cpu(&mut self, cpu: Rc<RefCell<Cpu>>) {
@@ -294,32 +297,87 @@ impl Ppu {
     }
 
     pub fn read_ppu_bus(&self, address: u16) -> u8 {
+        self.read_ppu_bus_with_kind(address, PpuFetchKind::Cpu, false)
+    }
+
+    fn read_ppu_bus_with_kind(&self, address: u16, kind: PpuFetchKind, rendering: bool) -> u8 {
+        if let Some(cartridge) = &self.cartridge {
+            cartridge.borrow_mut().notify_ppu_fetch(PpuFetch {
+                address,
+                ppu_cycle: self.total_cycles,
+                kind,
+                rendering,
+                sprite_16: self
+                    .control_register
+                    .get_flag_enabled(control_flags::SPRITE_SIZE),
+                is_read: true,
+            });
+        }
         let result = match address {
-            0x0..0x2000 => self
-                .cartrige
-                .as_ref()
-                .map(|c| c.borrow_mut().read(CartrigeAccess::PpuAccess { address }))
-                .flatten()
-                .unwrap_or(0x0),
-            0x2000..0x3F00 => {
-                self.nametable_memory[self.map_nametable_address(address) as usize - 0x2000]
+            0x0..0x2000 => {
+                let ciram = self
+                    .cartridge
+                    .as_ref()
+                    .and_then(|c| c.borrow().ppu_ciram_target(address));
+                if let Some(offset) = ciram {
+                    self.nametable_memory[offset & 0x07ff]
+                } else {
+                    self.cartridge
+                        .as_ref()
+                        .and_then(|c| c.borrow_mut().read(CartridgeAccess::PpuAccess { address }))
+                        .unwrap_or(0)
+                }
             }
+            0x2000..0x3F00 => self
+                .cartridge
+                .as_ref()
+                .and_then(|c| c.borrow().read_mapper_nametable(address))
+                .unwrap_or_else(|| {
+                    self.nametable_memory[self.map_nametable_address(address) as usize - 0x2000]
+                }),
             0x3F00..0x4000 => self.pallet_memory.read_address(address),
             _ => 0,
         };
-        return result;
+        result
     }
 
     pub fn write(&mut self, address: u16, value: u8) {
+        if let Some(cartridge) = &self.cartridge {
+            cartridge.borrow_mut().notify_ppu_fetch(PpuFetch {
+                address,
+                ppu_cycle: self.total_cycles,
+                kind: PpuFetchKind::Cpu,
+                rendering: false,
+                sprite_16: self
+                    .control_register
+                    .get_flag_enabled(control_flags::SPRITE_SIZE),
+                is_read: false,
+            });
+        }
         match address {
             0x0..0x2000 => {
-                _ = self.cartrige.as_ref().map(|c| {
-                    c.borrow_mut()
-                        .write(CartrigeAccess::PpuAccess { address }, value)
-                })
+                let ciram = self
+                    .cartridge
+                    .as_ref()
+                    .and_then(|c| c.borrow().ppu_ciram_target(address));
+                if let Some(offset) = ciram {
+                    self.nametable_memory[offset & 0x07ff] = value;
+                } else {
+                    _ = self.cartridge.as_ref().map(|c| {
+                        c.borrow_mut()
+                            .write(CartridgeAccess::PpuAccess { address }, value)
+                    })
+                }
             }
             0x2000..0x3F00 => {
-                self.nametable_memory[self.map_nametable_address(address) as usize - 0x2000] = value
+                let handled = self
+                    .cartridge
+                    .as_ref()
+                    .is_some_and(|c| c.borrow_mut().write_mapper_nametable(address, value));
+                if !handled {
+                    self.nametable_memory[self.map_nametable_address(address) as usize - 0x2000] =
+                        value;
+                }
             }
             0x3F00..0x4000 => {
                 self.pallet_memory.write_address(address, value);
@@ -353,17 +411,21 @@ impl Ppu {
                 match (self.dot - 1) % 8 + 1 {
                     // load shifters + last tick of NT
                     2 => {
-                        self.renderer_sprite_id = self.read_ppu_bus(
+                        self.renderer_sprite_id = self.read_ppu_bus_with_kind(
                             0x2000 | (self.vram_address.get_bitfield(NAMETABLE_OFFSET)),
+                            PpuFetchKind::BackgroundNametable,
+                            true,
                         )
                     }
                     // last tick of AT
                     4 => {
-                        let mut attributes = self.read_ppu_bus(
+                        let mut attributes = self.read_ppu_bus_with_kind(
                             0x23C0
                                 | self.vram_address.get_bitmasked(BASE_NAMETABLE_ADDRESS)
                                 | (self.vram_address.get_bitfield(COARSE_X) >> 2)
                                 | (self.vram_address.get_bitfield(COARSE_Y) >> 2 << 3),
+                            PpuFetchKind::BackgroundAttribute,
+                            true,
                         );
 
                         if (self.vram_address.get_bitfield(COARSE_Y) & 2) != 0 {
@@ -378,19 +440,23 @@ impl Ppu {
                     // last tick of BG LSBIT
                     6 => {
                         // info on pattern tables: https://www.nesdev.org/wiki/PPU_pattern_tables
-                        self.renderer_pattern_lsb = self.read_ppu_bus(
+                        self.renderer_pattern_lsb = self.read_ppu_bus_with_kind(
                             self.get_background_pattern_address()
                                 + self.renderer_sprite_id as u16 * 16
                                 + self.vram_address.get_bitfield(FINE_Y),
+                            PpuFetchKind::BackgroundPattern,
+                            true,
                         )
                     }
                     // last tick of BG MSBIT + increment horizontaly/vertically
                     8 => {
-                        self.renderer_pattern_msb = self.read_ppu_bus(
+                        self.renderer_pattern_msb = self.read_ppu_bus_with_kind(
                             self.get_background_pattern_address()
                                 + self.renderer_sprite_id as u16 * 16
                                 + self.vram_address.get_bitfield(FINE_Y)
                                 + 8,
+                            PpuFetchKind::BackgroundPattern,
+                            true,
                         );
 
                         // read more about incrementation: https://www.nesdev.org/wiki/PPU_scrolling#Wrapping_around
@@ -446,6 +512,17 @@ impl Ppu {
                     COARSE_X | BASE_NAMETABLE_ADDRESS_X,
                     self.temp_vram_address
                         .get_bitmasked(COARSE_X | BASE_NAMETABLE_ADDRESS_X),
+                );
+            }
+
+            // The two dummy nametable reads at dots 337-340 are observable by
+            // cartridges. Together with the first nametable read of the next
+            // scanline they form the MMC5's three-identical-read sync marker.
+            if scanline_background_visible && matches!(self.dot, 338 | 340) {
+                self.read_ppu_bus_with_kind(
+                    0x2000 | self.vram_address.get_bitfield(NAMETABLE_OFFSET),
+                    PpuFetchKind::Dummy,
+                    true,
                 );
             }
 
@@ -716,7 +793,11 @@ impl Ppu {
                                         sprite_pattern_table_address + tile_id * 16 + row;
                                 }
                                 5 => {
-                                    let mut fetched_byte = self.read_ppu_bus(*temp_fetch_addr);
+                                    let mut fetched_byte = self.read_ppu_bus_with_kind(
+                                        *temp_fetch_addr,
+                                        PpuFetchKind::SpritePattern,
+                                        true,
+                                    );
                                     if temp_sprite
                                         .attributes
                                         .get_flag_enabled(sprite_attributes::FLIP_HORIZONTALLY)
@@ -738,7 +819,11 @@ impl Ppu {
                                     *temp_fetch_addr += 8;
                                 }
                                 7 => {
-                                    let mut fetched_byte = self.read_ppu_bus(*temp_fetch_addr);
+                                    let mut fetched_byte = self.read_ppu_bus_with_kind(
+                                        *temp_fetch_addr,
+                                        PpuFetchKind::SpritePattern,
+                                        true,
+                                    );
                                     if temp_sprite
                                         .attributes
                                         .get_flag_enabled(sprite_attributes::FLIP_HORIZONTALLY)
@@ -899,6 +984,8 @@ impl Ppu {
             }
         }
 
+        self.total_cycles = self.total_cycles.wrapping_add(1);
+
         out
     }
 
@@ -953,8 +1040,8 @@ impl Ppu {
             background_nametable_address = 0x1000;
         }
         let first_byte = self
-            .read_cartrige(background_nametable_address + (sprite as u16) * 16 + pixel_i as u16);
-        let second_byte = self.read_cartrige(
+            .read_cartridge(background_nametable_address + (sprite as u16) * 16 + pixel_i as u16);
+        let second_byte = self.read_cartridge(
             background_nametable_address + (sprite as u16) * 16 + pixel_i as u16 + 8,
         );
 
@@ -963,10 +1050,10 @@ impl Ppu {
         (msb << 1) + lsb
     }
 
-    fn read_cartrige(&self, address: u16) -> u8 {
-        self.cartrige
+    fn read_cartridge(&self, address: u16) -> u8 {
+        self.cartridge
             .as_ref()
-            .map(|c| c.borrow_mut().read(CartrigeAccess::PpuAccess { address }))
+            .map(|c| c.borrow_mut().read(CartridgeAccess::PpuAccess { address }))
             .flatten()
             .unwrap_or(0)
     }
@@ -987,10 +1074,10 @@ impl Ppu {
             let first_byte_address = sprite_i * 256 + sprite_j * 16 + i;
             let second_byte_address = first_byte_address + 8;
             let first_byte = self
-                .cartrige
+                .cartridge
                 .as_ref()
                 .map(|c| {
-                    c.borrow_mut().read(CartrigeAccess::PpuAccess {
+                    c.borrow_mut().read(CartridgeAccess::PpuAccess {
                         address: first_byte_address,
                     })
                 })
@@ -998,10 +1085,10 @@ impl Ppu {
                 .unwrap_or(0);
 
             let second_byte = self
-                .cartrige
+                .cartridge
                 .as_ref()
                 .map(|c| {
-                    c.borrow_mut().read(CartrigeAccess::PpuAccess {
+                    c.borrow_mut().read(CartridgeAccess::PpuAccess {
                         address: second_byte_address,
                     })
                 })
@@ -1020,7 +1107,7 @@ impl Ppu {
     }
 
     fn map_nametable_address(&self, address: u16) -> u16 {
-        self.cartrige
+        self.cartridge
             .as_ref()
             .map(|c| c.borrow().map_nametable(address))
             .unwrap_or_else(|| address)
