@@ -868,6 +868,8 @@ impl Ppu {
                 }
                 _ => {}
             }
+        } else {
+            self.renderer_sprite_state = SpriteRenderingState::Idle;
         }
 
         if self.scanline == 241 && self.dot == 1 {
