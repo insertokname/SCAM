@@ -121,6 +121,7 @@ pub struct Ppu {
     renderer_sprite_x_counter: [u8; 8],
     renderer_sprite_attributes: [u8; 8],
     renderer_sprite_orig_indexes: [u8; 8],
+    renderer_output_sprite_orig_indexes: [u8; 8],
     is_odd_frame: bool,
 }
 
@@ -166,6 +167,7 @@ impl Ppu {
             renderer_sprite_x_counter: [0; 8],
             renderer_sprite_attributes: [0; 8],
             renderer_sprite_orig_indexes: [0; 8],
+            renderer_output_sprite_orig_indexes: [0; 8],
             is_odd_frame: false,
         }
     }
@@ -528,8 +530,8 @@ impl Ppu {
 
             // implementation of this: https://www.nesdev.org/wiki/PPU_sprite_evaluation
             match self.scanline {
-                0..=239 => {
-                    if matches!(self.dot, (1..=256)) {
+                0..=239 | 261 => {
+                    if matches!(self.dot, (1..=256)) && self.scanline != 261 {
                         for i in 0..8 {
                             if self.renderer_sprite_x_counter[i] > 0 {
                                 self.renderer_sprite_x_counter[i] -= 1;
@@ -539,6 +541,10 @@ impl Ppu {
                             }
                         }
                     };
+                    if self.dot == 257 {
+                        self.renderer_output_sprite_orig_indexes =
+                            self.renderer_sprite_orig_indexes;
+                    }
 
                     // update the sprite rendering state if required
                     if !matches!(
@@ -560,6 +566,15 @@ impl Ppu {
                             },
                             _ => SpriteRenderingState::Idle,
                         };
+                    }
+
+                    if self.scanline == 261
+                        && !matches!(
+                            self.renderer_sprite_state,
+                            SpriteRenderingState::Fetching { .. }
+                        )
+                    {
+                        self.renderer_sprite_state = SpriteRenderingState::Idle;
                     }
 
                     let mut state = self.renderer_sprite_state.clone();
@@ -919,7 +934,7 @@ impl Ppu {
 
                     let lsb = self.renderer_sprite_shift_lsb[sprite_idx];
                     let msb = self.renderer_sprite_shift_msb[sprite_idx];
-                    let orig_index = self.renderer_sprite_orig_indexes[sprite_idx];
+                    let orig_index = self.renderer_output_sprite_orig_indexes[sprite_idx];
 
                     let pattern_lsb = lsb.get_bitfield(0x80);
                     let pattern_msb = msb.get_bitfield(0x80);
