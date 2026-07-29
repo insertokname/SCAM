@@ -1,5 +1,5 @@
 [workspace]
-members = ["scamm", "scamu", "scami"]
+members = ["scamm", "scamu", "scami", "scame"]
 resolver = "3"
 
 [profile.dev]

@@ -1,0 +1,11 @@
+[package]
+name = "scame"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.4", features = ["derive"] }
+scamm = { version = "0.1.0", path = "../scamm" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+walkdir = "2.5.0"

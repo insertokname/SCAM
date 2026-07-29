@@ -156,13 +156,20 @@
               </button>
 
               <h1
-                class="border-b border-dark3 pb-3 text-lg tracking-widest text-bright_yellow"
+                class="pb-6 text-lg tracking-widest text-bright_yellow flex flex-col gap-3"
               >
-                Select a cartridge
+                <span>Select a cartridge</span>
+                <input
+                  id="rom-search"
+                  type="text"
+                  placeholder="Search games..."
+                  class="bg-dark1 border border-dark3 px-3 py-2 text-xs text-light1 placeholder-dark3 focus:outline-none focus:border-bright_yellow w-full transition-all"
+                  autocomplete="off"
+                />
               </h1>
 
-              <div class="pt-5">
-                <div class="space-y-5">
+              <div id="launcher-content">
+                <div class="space-y-5" id="launcher-default">
                   <section>
                     <h2
                       class="mb-2 text-xs uppercase tracking-widest text-light4"
@@ -247,7 +254,8 @@
                           )
                         "
                       >
-                        <span>The legend of Zelda</span><span class="text-light4">ROM</span>
+                        <span>The legend of Zelda</span
+                        ><span class="text-light4">ROM</span>
                       </button>
                     </div>
                   </section>
@@ -293,6 +301,12 @@
                       </button>
                     </div>
                   </section>
+                </div>
+              </div>
+
+              <div class="hidden" id="launcher-search-results">
+                <div class="space-y-2" id="search-results-list">
+                  <!-- Search results injected here -->
                 </div>
               </div>
             </div>

@@ -9,11 +9,134 @@ const resetBtn = document.getElementById("reset-btn");
 const launcherBtns = document.querySelectorAll(".launcher-btn");
 const fetchBar = document.getElementById("fetch-bar-fill");
 const toast = document.getElementById("toast");
+const romSearch = document.getElementById("rom-search");
+const launcherDefault = document.getElementById("launcher-default");
+const launcherSearchResults = document.getElementById(
+  "launcher-search-results",
+);
+const searchResultsList = document.getElementById("search-results-list");
 
 let wasmReady = false;
 let emulationStarted = false;
 let hasLoadedRom = false;
 let fileDragDepth = 0;
+
+let romManifest = null;
+const ARCHIVE_BASE_URL =
+  "https://archive.org/download/NESMegaPack201808/ROMS.zip/";
+
+async function fetchRomManifest() {
+  if (romManifest) return;
+  try {
+    const res = await fetch("/assets/roms.json");
+    if (!res.ok) throw new Error("Failed to load ROM manifest");
+    romManifest = await res.json();
+    if (romSearch) {
+      const totalCount = romManifest.filter((r) => r.supported).length;
+      romSearch.placeholder = `Search ${totalCount} available games...`;
+    }
+  } catch (err) {
+    console.error("Error loading roms.json:", err);
+  }
+}
+
+function handleSearch(query) {
+  if (!romManifest) return;
+  const lowerQuery = query.toLowerCase().trim();
+
+  if (lowerQuery.length < 1) {
+    launcherDefault.classList.remove("hidden");
+    launcherSearchResults.classList.add("hidden");
+    return;
+  }
+
+  launcherDefault.classList.add("hidden");
+  launcherSearchResults.classList.remove("hidden");
+
+  const catPriority = ["world", "usa", "europe", "canada", "australia"];
+  function getPriority(category) {
+    const idx = catPriority.indexOf(category.toLowerCase());
+    return idx === -1 ? 999 : idx;
+  }
+
+  // Filter and sort results
+  const results = romManifest
+    .filter(
+      (r) =>
+        r.name.toLowerCase().includes(lowerQuery) ||
+        r.category.toLowerCase().includes(lowerQuery),
+    )
+    .sort((a, b) => {
+      // First, prioritize by supported status
+      if (a.supported !== b.supported) {
+        return a.supported ? -1 : 1;
+      }
+      // Then, prioritize by specific categories
+      const priorityA = getPriority(a.category);
+      const priorityB = getPriority(b.category);
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      // Finally, alphabetical by name
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, 50); // Only take first 50 results to prevent UI lag
+
+  searchResultsList.innerHTML = "";
+
+  if (results.length === 0) {
+    searchResultsList.innerHTML = `<p class="text-light4 text-xs italic">No results found.</p>`;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  results.forEach((rom) => {
+    const btn = document.createElement("button");
+    const isSupported = rom.supported;
+
+    // Construct the correct archive URL
+    // Encode each part of the path separately
+    const encodedPath = rom.path.split("/").map(encodeURIComponent).join("%2F");
+    const fullUrl = ARCHIVE_BASE_URL + encodedPath;
+
+    btn.type = "button";
+    btn.className = `launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245 ${
+      isSupported ? "hover:border-light4 hover:bg-dark3" : "opacity-50"
+    }`;
+
+    if (!isSupported) {
+      btn.disabled = true;
+      btn.title = "Mapper not yet supported by S.C.A.M.";
+    }
+
+    btn.dataset.romUrl = fullUrl;
+    btn.dataset.romName = rom.name;
+
+    btn.innerHTML = `
+      <div class="flex flex-col truncate pr-2">
+        <span class="truncate">${rom.name}</span>
+        <span class="text-[0.65rem] text-dark3 uppercase tracking-wider">${rom.category}</span>
+      </div>
+      <span class="text-light4 shrink-0">${isSupported ? "ROM" : "UNSUPPORTED"}</span>
+    `;
+
+    if (isSupported) {
+      btn.onclick = () => {
+        window.loadPredefined(fullUrl, rom.name);
+      };
+    }
+
+    fragment.appendChild(btn);
+  });
+
+  searchResultsList.appendChild(fragment);
+}
+
+if (romSearch) {
+  romSearch.addEventListener("input", (e) => {
+    handleSearch(e.target.value);
+  });
+}
 
 let toastTimer = null;
 
@@ -246,6 +369,8 @@ window.showLauncher = function () {
   launcher.classList.remove("gone");
   setPaused(true);
   status.textContent = hasLoadedRom ? "paused" : "ready";
+  fetchRomManifest();
+  if (romSearch) romSearch.focus();
 };
 
 window.hideLauncher = function () {
@@ -682,6 +807,8 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  fetchRomManifest();
+
   document.querySelectorAll("[data-rom-url]").forEach((btn) => {
     if (btn.dataset.romUrl.startsWith("http")) {
       const link = document.createElement("link");

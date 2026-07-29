@@ -7,7 +7,7 @@ Live wasm version here: https://scam.insertokname.com
 **LLM usage:**
 
 - `scamu` was fully done by me using the nes dev wiki, tricness, and olcnes as a refference
-- `scami` was partially written by ai
+- `scami` and `scame` were partially written by ai
 - `scamm` was fully written using agentic swarms
 
 Controls:
@@ -42,4 +42,6 @@ Requirements:
 To run the project run `trunk serve` for easy reloading or `trunk build` if you want a static output.
 
 
+### roms.json
 
+The web shell uses a file `roms.json` that specifies available roms and is used for **search results** in the web shell. If you want to use a new archive or add custom roms to the search results you should regenerate `roms.json` via `scame`
