@@ -15,6 +15,11 @@ const launcherSearchResults = document.getElementById(
   "launcher-search-results",
 );
 const searchResultsList = document.getElementById("search-results-list");
+const launcherPlay = document.getElementById("launcher-play");
+const playSharedBtn = document.getElementById("play-shared-btn");
+const playSharedName = document.getElementById("play-shared-name");
+const browseAllBtn = document.getElementById("browse-all-btn");
+const shareBtn = document.getElementById("share-btn");
 
 let wasmReady = false;
 let emulationStarted = false;
@@ -39,6 +44,77 @@ async function fetchRomManifest() {
     console.error("Error loading roms.json:", err);
   }
 }
+
+function romArchiveUrl(rom) {
+  // Encode each part of the path separately
+  const encodedPath = rom.path.split("/").map(encodeURIComponent).join("%2F");
+  return ARCHIVE_BASE_URL + encodedPath;
+}
+
+// Finds the manifest entry a fetched archive URL points at, so loads from
+// the hardcoded launcher buttons can be shared too.
+function manifestEntryForUrl(url) {
+  if (!romManifest || !url.startsWith(ARCHIVE_BASE_URL)) return null;
+  let romPath;
+  try {
+    romPath = decodeURIComponent(url.slice(ARCHIVE_BASE_URL.length));
+  } catch {
+    return null;
+  }
+  return romManifest.find((r) => r.path === romPath) || null;
+}
+
+// ---------- Shareable game links ----------
+// A link like `/?game=Pac-Man%20(U)%20(Namco)` opens the launcher straight to
+// a single "play" button for that manifest entry. Browsers block audio until
+// a user gesture, so we still need that one click before starting the game.
+function setGameParam(gameName) {
+  const search = gameName ? `?game=${encodeURIComponent(gameName)}` : "";
+  history.replaceState(null, "", location.pathname + search + location.hash);
+  shareBtn.disabled = !gameName;
+}
+
+function showDefaultLauncher() {
+  launcherPlay.classList.add("hidden");
+  launcherDefault.classList.remove("hidden");
+}
+
+function openSharedGame() {
+  const gameName = new URLSearchParams(location.search).get("game");
+  if (!gameName) return;
+
+  const rom = romManifest && romManifest.find((r) => r.name === gameName);
+  if (!rom || !rom.supported) {
+    setGameParam(null);
+    showToast(
+      rom
+        ? `${rom.name} is not yet supported by S.C.A.M.`
+        : `Could not find a game named "${gameName}".`,
+    );
+    return;
+  }
+
+  playSharedName.textContent = rom.name;
+  playSharedBtn.onclick = () =>
+    window.loadPredefined(romArchiveUrl(rom), rom.name);
+  launcherDefault.classList.add("hidden");
+  launcherSearchResults.classList.add("hidden");
+  launcherPlay.classList.remove("hidden");
+  if (!playSharedBtn.disabled) playSharedBtn.focus();
+}
+
+browseAllBtn.addEventListener("click", showDefaultLauncher);
+
+shareBtn.addEventListener("click", async () => {
+  shareBtn.blur();
+  try {
+    await navigator.clipboard.writeText(location.href);
+    showToast("Link copied to clipboard.");
+  } catch (err) {
+    console.error(err);
+    showToast(`Copy this link to share: ${location.href}`);
+  }
+});
 
 function handleSearch(query) {
   if (!romManifest) return;
@@ -95,9 +171,7 @@ function handleSearch(query) {
     const isSupported = rom.supported;
 
     // Construct the correct archive URL
-    // Encode each part of the path separately
-    const encodedPath = rom.path.split("/").map(encodeURIComponent).join("%2F");
-    const fullUrl = ARCHIVE_BASE_URL + encodedPath;
+    const fullUrl = romArchiveUrl(rom);
 
     btn.type = "button";
     btn.className = `launcher-btn flex w-full items-center justify-between border border-dark3 bg-dark1 px-3 py-2 text-left text-xs text-light1 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245 ${
@@ -134,6 +208,7 @@ function handleSearch(query) {
 
 if (romSearch) {
   romSearch.addEventListener("input", (e) => {
+    launcherPlay.classList.add("hidden");
     handleSearch(e.target.value);
   });
 }
@@ -357,7 +432,10 @@ async function loadLocalFile(file) {
   status.textContent = "reading...";
   try {
     const buf = await file.arrayBuffer();
-    await loadRomBytes(buf, file.name);
+    if (await loadRomBytes(buf, file.name)) {
+      setGameParam(null);
+      showDefaultLauncher();
+    }
   } catch (err) {
     console.error(err);
     status.textContent = "read error";
@@ -446,7 +524,11 @@ window.loadPredefined = async function (path, name) {
     const resp = await fetch(path);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const buf = await resp.arrayBuffer();
-    await loadRomBytes(buf, name);
+    if (await loadRomBytes(buf, name)) {
+      const rom = manifestEntryForUrl(path);
+      setGameParam(rom ? rom.name : null);
+      showDefaultLauncher();
+    }
   } catch (err) {
     console.error(err);
     status.textContent = "fetch error";
@@ -807,7 +889,7 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  fetchRomManifest();
+  fetchRomManifest().then(openSharedGame);
 
   document.querySelectorAll("[data-rom-url]").forEach((btn) => {
     if (btn.dataset.romUrl.startsWith("http")) {

@@ -97,6 +97,15 @@
             class="flex flex-col sm:flex-row justify-start sm:justify-end gap-2 pointer-events-auto sm:ml-auto w-full sm:w-auto"
           >
             <button
+              id="share-btn"
+              class="flex-1 sm:flex-none border border-light3 bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+              type="button"
+              title="Copy a link that opens this game"
+              disabled
+            >
+              share
+            </button>
+            <button
               id="reset-btn"
               class="flex-1 sm:flex-none border border-light3 bg-dark2 px-2 py-0.5 sm:py-1 text-[0.6rem] sm:text-xs text-light1 hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
               type="button"
@@ -169,6 +178,32 @@
               </h1>
 
               <div id="launcher-content">
+                <div class="hidden space-y-5" id="launcher-play">
+                  <section>
+                    <h2
+                      class="mb-2 text-xs uppercase tracking-widest text-light4"
+                    >
+                      Shared game
+                    </h2>
+                    <button
+                      id="play-shared-btn"
+                      class="launcher-btn flex w-full items-center justify-between border border-bright_yellow bg-dark2 px-3 py-2 text-left text-xs text-bright_yellow hover:bg-dark3 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow disabled:cursor-default disabled:border-dark1 disabled:bg-dark0 disabled:text-gray_245"
+                      type="button"
+                      disabled
+                    >
+                      <span id="play-shared-name" class="truncate pr-2"></span
+                      ><span class="shrink-0">▶ PLAY</span>
+                    </button>
+                  </section>
+                  <button
+                    id="browse-all-btn"
+                    class="text-xs text-light4 hover:text-light1 focus:outline-2 focus:outline-offset-2 focus:outline-bright_yellow"
+                    type="button"
+                  >
+                    browse all games...
+                  </button>
+                </div>
+
                 <div class="space-y-5" id="launcher-default">
                   <section>
                     <h2
